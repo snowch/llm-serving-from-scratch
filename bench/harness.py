@@ -36,11 +36,17 @@ RESULTS_DIR = Path(__file__).resolve().parent / "results"
 
 @dataclass(frozen=True)
 class RequestSpec:
-    """One entry in a trace: when it arrives and how big it is."""
+    """One entry in a trace: when it arrives, how big it is, and optionally what it contains.
+
+    ``tokens`` matters for chapter 9. Prefix caching only does anything when requests genuinely
+    share text, so a trace has to be able to specify the actual prompt rather than just a length.
+    When it is None the harness synthesises a prompt of ``prompt_len`` tokens.
+    """
 
     arrival: float
     prompt_len: int
     max_tokens: int
+    tokens: tuple[int, ...] | None = None
 
 
 @dataclass(frozen=True)
@@ -227,8 +233,13 @@ def run_benchmark(
 
         while index < len(pending) and pending[index].arrival <= now:
             spec = pending[index]
+            prompt = (
+                list(spec.tokens)
+                if spec.tokens is not None
+                else [(i % 250) + 1 for i in range(spec.prompt_len)]
+            )
             request = Request(
-                prompt_token_ids=[(i % 250) + 1 for i in range(spec.prompt_len)],
+                prompt_token_ids=prompt,
                 params=SamplingParams(max_tokens=spec.max_tokens, seed=seed),
             )
             engine.add_request(request)

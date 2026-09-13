@@ -57,6 +57,14 @@ SCORECARDS: dict[str, list[tuple[str, str]]] = {
         ("ch07 Continuous, 16 req/s", "continuous-rate16-tier1"),
         ("ch08 Paged, 16 req/s", "paged-rate16-tier1"),
     ],
+    "ch09-prefix-caching": [
+        ("ch08 Paged, chat 4 req/s", "paged-chat-rate4-tier1"),
+        ("ch09 Prefix cache, chat 4 req/s", "prefix-chat-rate4-tier1"),
+        ("ch08 Paged, chat 8 req/s", "paged-chat-rate8-tier1"),
+        ("ch09 Prefix cache, chat 8 req/s", "prefix-chat-rate8-tier1"),
+        ("ch08 Paged, chat 16 req/s", "paged-chat-rate16-tier1"),
+        ("ch09 Prefix cache, chat 16 req/s", "prefix-chat-rate16-tier1"),
+    ],
     # The running scorecard: the whole journey so far, at one saturating rate.
     "ch07-running-scorecard": [
         ("ch01 Naive", "naive-rate16-tier1"),
@@ -76,4 +84,5 @@ CONDITIONS: dict[str, str] = {
     "ch07-continuous-batching": "continuous-rate8-tier1",
     "ch07-running-scorecard": "continuous-rate16-tier1",
     "ch08-paged": "paged-rate16-tier1",
+    "ch09-prefix-caching": "prefix-chat-rate8-tier1",
 }
