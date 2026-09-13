@@ -1,0 +1,53 @@
+{
+  "engine": "arithmetic",
+  "generated_at": "2026-09-13T15:43:08+00:00",
+  "hardware": {
+    "platform": "Linux-6.18.44-fc-v24-x86_64-with-glibc2.39",
+    "machine": "x86_64",
+    "processor": "x86_64",
+    "cpu_count": 4,
+    "device": "cpu"
+  },
+  "model": {
+    "name": "TinyGPT variants",
+    "params": 6427904
+  },
+  "versions": {
+    "python": "3.11.15",
+    "torch": "2.14.0+cu130",
+    "numpy": "2.4.6"
+  },
+  "code_fingerprint": "n/a-arithmetic",
+  "engine_module": null,
+  "conditions": {
+    "trace": "arithmetic only, no serving"
+  },
+  "summary": {
+    "variants": [
+      {
+        "label": "MHA",
+        "n_kv_heads": 8,
+        "params": 6427904,
+        "kv_bytes_per_token": 12288
+      },
+      {
+        "label": "GQA 2:1",
+        "n_kv_heads": 4,
+        "params": 6034688,
+        "kv_bytes_per_token": 6144
+      },
+      {
+        "label": "GQA 4:1",
+        "n_kv_heads": 2,
+        "params": 5838080,
+        "kv_bytes_per_token": 3072
+      },
+      {
+        "label": "MQA",
+        "n_kv_heads": 1,
+        "params": 5739776,
+        "kv_bytes_per_token": 1536
+      }
+    ]
+  }
+}

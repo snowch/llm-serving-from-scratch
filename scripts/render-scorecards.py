@@ -21,10 +21,12 @@ sys.path.insert(0, str(ROOT))
 
 from bench.scorecard import (  # noqa: E402
     arithmetic_table,
+    attention_footprint_table,
     chunk_cost_table,
     conditions,
     handoff_table,
     memory_table,
+    score_matrix_table,
     table,
 )
 from bench.scorecards import CONDITIONS, SCORECARDS  # noqa: E402
@@ -40,6 +42,8 @@ DERIVED = {
     "ch08-memory": memory_table,
     "ch10-chunk-cost": chunk_cost_table,
     "ch11-handoff": handoff_table,
+    "ch12-footprint": attention_footprint_table,
+    "ch12-score-matrix": score_matrix_table,
 }
 
 

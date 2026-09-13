@@ -76,6 +76,12 @@ SCORECARDS: dict[str, list[tuple[str, str]]] = {
         ("ch07 One pool, 16 req/s", "onepool-rate16-tier1"),
         ("ch11 Two pools, 16 req/s", "disagg-rate16-tier1"),
     ],
+    "ch12-gqa": [
+        ("MHA, 8 KV heads", "attn-kv8-tier1"),
+        ("GQA 2:1, 4 KV heads", "attn-kv4-tier1"),
+        ("GQA 4:1, 2 KV heads", "attn-kv2-tier1"),
+        ("MQA, 1 KV head", "attn-kv1-tier1"),
+    ],
     # The running scorecard: the whole journey so far, at one saturating rate.
     "ch07-running-scorecard": [
         ("ch01 Naive", "naive-rate16-tier1"),
@@ -98,4 +104,5 @@ CONDITIONS: dict[str, str] = {
     "ch09-prefix-caching": "prefix-chat-rate8-tier1",
     "ch10-token-budget": "chunked-budget512-tier1",
     "ch11-disaggregation": "disagg-rate16-tier1",
+    "ch12-gqa": "attn-kv2-tier1",
 }

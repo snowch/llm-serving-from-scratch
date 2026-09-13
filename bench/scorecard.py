@@ -204,3 +204,54 @@ def handoff_table() -> str:
         size = f"{payload / 1e6:.1f} MB" if payload < 1e9 else f"{payload / 1e9:.2f} GB"
         lines.append(f"| {label} | {size} | " + " | ".join(times) + " |")
     return "\n".join(lines)
+
+
+def attention_footprint_table() -> str:
+    """What the KV-head choice costs at production scale, and what it buys in concurrency.
+
+    Arithmetic rather than measurement: our model is too small for the KV cache to be the binding
+    constraint, and this is precisely the term that becomes binding as models and contexts grow.
+    """
+    from llmserve.arithmetic import kv_bytes_per_token
+    from llmserve.config import ModelConfig
+
+    budget = 40 * 1024**3  # KV budget on an 80 GB accelerator after weights
+    context = 32768
+    rows = []
+    for label, n_kv in [
+        ("MHA (32 KV heads)", 32),
+        ("GQA 4:1 (8 KV heads)", 8),
+        ("MQA (1 KV head)", 1),
+    ]:
+        config = ModelConfig(
+            vocab_size=128_256, n_layers=32, n_heads=32, n_kv_heads=n_kv, head_dim=128, dtype="fp16"
+        )
+        per_token = kv_bytes_per_token(config)
+        per_sequence = per_token * context
+        rows.append(
+            (
+                label,
+                f"{per_token / 1024:.0f} KiB",
+                f"{per_sequence / 1e9:.2f} GB",
+                f"{int(budget // per_sequence)}",
+            )
+        )
+
+    lines = [
+        f"| Attention | KV per token | Per 32k sequence | Sequences in {budget // 1024**3} GB |",
+        "|---|---|---|---|",
+    ]
+    lines += [f"| {a} | {b} | {c} | {d} |" for a, b, c, d in rows]
+    return "\n".join(lines)
+
+
+def score_matrix_table() -> str:
+    """Bytes a materialised attention score matrix occupies, per layer, at several contexts."""
+    from llmserve.attention import attention_matrix_bytes
+
+    lines = ["| Context | Score matrix, per layer (32 heads, fp32) |", "|---|---|"]
+    for context in (512, 2048, 8192, 32768):
+        payload = attention_matrix_bytes(context, context, 32)
+        size = f"{payload / 1e6:.0f} MB" if payload < 1e9 else f"{payload / 1e9:.1f} GB"
+        lines.append(f"| {context:,} | {size} |")
+    return "\n".join(lines)
