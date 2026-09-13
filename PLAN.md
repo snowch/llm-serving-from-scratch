@@ -1,0 +1,600 @@
+# LLM Serving from Scratch — Book Plan
+
+**Working title:** LLM Serving from Scratch
+**Subtitle:** *Build a production inference engine, one measurement at a time*
+**Author:** Chris Snow
+**Published at:** `https://snowch.github.io/llm-serving-from-scratch/`
+**Linked from:** [snowch.github.io](https://snowch.github.io) — new landing page + `myst.yml` TOC entry (see [§10](#10-linking-from-snowchgithubio))
+**Status:** plan — nothing authored yet
+
+---
+
+## 1. What this book is
+
+Most material on LLM inference falls into one of two camps: papers that describe a single
+technique in isolation, or documentation that tells you which flags to pass to vLLM. Neither
+teaches you how a serving engine actually works, and neither lets you feel *why* each
+optimisation exists.
+
+This book builds one. Starting from a ~100-line FastAPI server that wraps
+`model.generate()` and serves roughly one request per second, the reader incrementally builds
+a real inference engine: KV cache, continuous batching, a paged block manager, prefix caching,
+chunked prefill, speculative decoding, quantisation, tensor parallelism, an OpenAI-compatible
+API, and the observability needed to run it. Every chapter ends by re-running the same
+benchmark, so progress is *measured*, never asserted.
+
+By the end the reader has a working engine of their own, understands the design of vLLM /
+SGLang / TensorRT-LLM well enough to read their source, and can size, price and operate a
+serving deployment.
+
+### 1.1 Who it is for
+
+| Reader | What they get |
+|---|---|
+| ML / platform engineer told to "self-host a model" | A defensible architecture, a capacity model, and the vocabulary to evaluate vLLM vs TGI vs a managed API |
+| Backend engineer new to GPUs | The two-bound mental model ([§3](#3-the-pedagogical-spine)) that makes every other decision obvious |
+| Practitioner who finished a *build-a-GPT* course | The missing half: the model trains, now make it serve 1,000 concurrent users |
+| SRE / observability engineer | What to actually put on a dashboard for a serving engine, and what each signal means |
+
+**Assumed background:** comfortable Python, basic PyTorch, knows what a transformer is
+(self-attention, layers, logits). Does *not* assume CUDA, distributed systems, or queueing
+theory — each is introduced where needed.
+
+### 1.2 What makes it different
+
+1. **It builds the engine, not a tour of flags.** Every core mechanism is implemented in
+   readable Python before any library is reached for.
+2. **Every claim is measured.** The running scorecard ([§3.2](#32-the-running-scorecard)) is
+   re-run at the end of every chapter. No "up to 20× faster" without a reproducible number
+   and the conditions that produced it.
+3. **Correctness is a first-class concern.** Each optimisation ships with an equivalence test
+   against a reference implementation. This is the thing real teams get wrong: it is very easy
+   to make a serving stack fast and subtly wrong.
+4. **One mental model, applied everywhere.** Prefill is compute-bound, decode is
+   memory-bandwidth-bound. Every technique in the book is reduced to "which bound does this
+   attack, and what does it cost?"
+5. **It runs on a laptop.** The default path is CPU-only with a small model, so no reader is
+   blocked by hardware. GPU numbers are provided and reproducible for those who have one.
+6. **Operations and economics are in scope.** Observability, load shedding, rolling upgrades,
+   and $/million-tokens — not just kernels.
+
+### 1.3 Non-goals
+
+- Not a CUDA book. One optional chapter writes a Triton kernel; otherwise we compose PyTorch
+  and call FlashAttention rather than reimplementing it.
+- Not about training, fine-tuning, or RLHF — that ground is already covered by the
+  *LLM From Scratch* series on the site.
+- Not a vLLM competitor. The engine we build is a teaching artefact: clear, tested, and
+  deliberately missing features, with the omissions named explicitly.
+- Not a framework comparison shoot-out, though Chapter 28 shows how to run one honestly.
+
+---
+
+## 2. Relationship to existing snowch.github.io content
+
+The site already has a three-part *LLM From Scratch* series. The overlap is real and needs to
+be handled deliberately, not ignored:
+
+| Existing page | Current form | Relationship to this book |
+|---|---|---|
+| `ai-eng/llmfs/L10_Inference_and_Sampling.md` | Lesson, ~350 lines | Prerequisite. Book ch04 goes deeper (numerical stability, stop strings, incremental detokenisation) and cites it. |
+| `ai-eng/llmfs-scaling/L17_Attention_Optimizations.md` | Lesson, ~420 lines, `[DRAFT]` | Surveys FlashAttention / KV cache / GQA. Book ch05, ch12, ch13 **build** them. |
+| `ai-eng/llmfs-scaling/L20_Quantization_Inference.md` | Lesson, ~390 lines, `[DRAFT]` | Shows how to *use* bitsandbytes / AutoGPTQ. Book ch14 adds KV-cache quantisation, FP8, and quality/speed/memory measurement. |
+| `ai-eng/llmfs-scaling/L21_Deployment_Serving.md` | Lesson, ~495 lines, `[DRAFT]` | Shows how to *call* vLLM. This book is the long-form version of that lesson — it is the single largest source of overlap. |
+
+**Recommended resolution:** keep the lessons as short, finished *summaries* and let them point
+into the book for depth. Concretely:
+
+- Finish L17/L20/L21 as ~200-line overviews (drop the `[DRAFT]` marker) and add a callout at
+  the top of each: *"This lesson surveys the technique. To build it yourself, see
+  [LLM Serving from Scratch](https://snowch.github.io/llm-serving-from-scratch/)."*
+- Do **not** delete them: they carry existing inbound links and rank for search terms the
+  book will also want.
+- The book's Chapter 1 links *back* to the `llmfs` core series as the prerequisite for readers
+  who want to understand the model itself.
+
+This reciprocal linking is also the main discoverability mechanism for the new book
+([§10](#10-linking-from-snowchgithubio)).
+
+---
+
+## 3. The pedagogical spine
+
+Two devices hold the book together. They are decided up front because every chapter depends
+on them.
+
+### 3.1 The two-bound model
+
+Introduced in Chapter 3 and referenced in every subsequent chapter:
+
+- **Prefill** processes the whole prompt at once. It is **compute-bound**: roughly
+  `2 × params` FLOPs per prompt token.
+- **Decode** produces one token at a time. It is **memory-bandwidth-bound**: each step reads
+  ~all weights plus the KV cache from HBM to do very little arithmetic.
+
+Two consequences the reader should be able to derive by the end of Chapter 3:
+
+- A single-stream decode ceiling of roughly `HBM bandwidth / bytes read per forward pass`
+  tokens/second — which explains why a bigger GPU helps decode more than a faster one.
+- KV cache per token = `2 × n_layers × n_kv_heads × head_dim × bytes_per_element`, which is
+  the budget that every Part III chapter is fighting over.
+
+Every technique in the book is then labelled with the bound it attacks:
+
+| Technique | Attacks | Cost |
+|---|---|---|
+| Continuous batching (ch07) | Decode bandwidth (amortises weight reads) | Scheduler complexity, TTFT variance |
+| Paged attention (ch08) | KV memory fragmentation | Indirection, kernel complexity |
+| Prefix caching (ch09) | Redundant prefill compute | Cache memory, eviction policy |
+| Chunked prefill (ch10) | Prefill/decode interference | Slightly slower prefill |
+| GQA / MQA (ch12) | KV cache size | Model must be trained for it |
+| Quantisation (ch14) | Weight bytes read, KV bytes | Quality loss, calibration |
+| Speculative decoding (ch15) | Decode serialisation | Extra compute; only wins at low batch |
+| Tensor parallelism (ch17) | Weights per GPU, aggregate bandwidth | Collective communication per layer |
+
+### 3.2 The running scorecard
+
+One benchmark harness, built in Chapter 2, re-run at the end of every chapter that changes the
+engine. It reports, at fixed request rates against a fixed trace:
+
+- TTFT p50 / p95 / p99
+- Inter-token latency (ITL) p50 / p95
+- Output tokens/second (aggregate) and requests/second completed
+- **Goodput**: requests/second that met a stated SLO — the number that actually matters
+- Peak KV-cache utilisation, preemption rate, mean batch size
+
+Each chapter ends with the same table, one new row appended, plus one sentence on *why* the
+number moved. The book's final chapter shows the whole table, from Chapter 1's baseline to the
+finished engine. This is the book's single strongest structural idea and should be built
+before any optimisation chapter is written.
+
+**Discipline required:** benchmark numbers are generated by a committed script, stored as JSON
+in the repo, and stamped with hardware, model, dates and library versions. Never hand-typed
+into prose. See [§6.3](#63-how-numbers-get-into-the-book).
+
+---
+
+## 4. Outline
+
+Seven parts, 29 chapters, 5 appendices. Chapter lengths target 2,500–5,000 words plus code;
+the optional/advanced chapters may run longer.
+
+### Part I — The Serving Problem (ch01–ch03)
+
+| # | Chapter | What the reader does |
+|---|---|---|
+| 01 | **What an Inference Server Actually Does** | Trace the full request lifecycle: HTTP → chat template → tokenise → prefill → decode loop → detokenise → stream → disconnect. Build the naive server (~100 lines, FastAPI + HF `generate`). Establish the baseline everything is measured against. |
+| 02 | **Measuring What Matters** | Define TTFT, ITL/TPOT, e2e latency, throughput, goodput. Why means lie and percentiles don't. Build the load generator — open-loop Poisson arrivals, and why closed-loop harnesses hide overload (coordinated omission). This chapter's output is the tool used for the rest of the book. |
+| 03 | **The Arithmetic of Inference** | Derive FLOPs and bytes-moved per token. Roofline and arithmetic intensity. Compute the decode ceiling and the KV-cache budget for a real model, then verify the prediction against the naive server. The conceptual spine ([§3.1](#31-the-two-bound-model)). |
+
+### Part II — The Decode Loop (ch04–ch06)
+
+| # | Chapter | What the reader does |
+|---|---|---|
+| 04 | **Generating Tokens Correctly** | Implement sampling from scratch: greedy, temperature, top-k, top-p, min-p, repetition/presence penalties — numerically stable, seeded, reproducible. Stop conditions, EOS, `max_tokens`, stop strings. Incremental detokenisation: partial UTF-8 and BPE boundaries, a genuine and under-documented bug source. |
+| 05 | **The KV Cache** | Build it. Show the O(n²)→O(n) recompute saving, measure the speedup, then compute the memory cost per token and per concurrent request. Hit the memory wall on purpose — it motivates all of Part III. |
+| 06 | **Static Batching and Its Limits** | Batch multiple requests: padding, attention masks, position IDs, left vs right padding. Measure the throughput win, then measure the waste: the ragged-completion problem, where the whole batch is held hostage by its longest generation. Quantify GPU idle time. |
+
+### Part III — Building the Engine (ch07–ch11)
+
+The core of the book. Each chapter is a significant restructuring of the engine.
+
+| # | Chapter | What the reader does |
+|---|---|---|
+| 07 | **Continuous Batching** | Invert the loop: instead of batch-in/batch-out, `step()` over a running set, admitting and retiring sequences *per iteration* (iteration-level scheduling, after Orca). Implement the scheduler. This produces the single largest jump on the scorecard. |
+| 08 | **Paged Attention and the Block Manager** | Why a contiguous per-sequence cache fragments and over-reserves. Implement fixed-size KV blocks, block tables, a logical→physical allocator, copy-on-write for forked sequences, and preemption (recompute vs swap-to-CPU) when memory runs out. Naive PyTorch gather first, then a real kernel. |
+| 09 | **Prefix Caching** | Share KV blocks across requests via content hashing. Build up to a radix-tree cache (à la SGLang RadixAttention) with LRU eviction. Show the effect on a chat trace with a long shared system prompt — often the single biggest real-world win, and almost free. |
+| 10 | **Chunked Prefill and Scheduling Policy** | Prefill and decode fight each other; a long prompt stalls every streaming response. Implement chunked prefill and a per-step token budget. Then scheduling policy: FCFS vs priority vs fair-share, admission control, and enough queueing theory to explain why p99 explodes as utilisation approaches 1. |
+| 11 | **Disaggregating Prefill and Decode** | Run prefill and decode as separate pools with a KV handoff (DistServe / Splitwise pattern). Implement a simplified version, measure the latency/complexity trade-off, and be honest about when it does *not* pay. |
+
+### Part IV — Making the Math Cheaper (ch12–ch16)
+
+| # | Chapter | What the reader does |
+|---|---|---|
+| 12 | **Attention at Speed** | Online softmax and tiling from first principles — derive why FlashAttention is IO-aware rather than fewer-FLOPs. Then KV-shrinking architectures: MQA, GQA, sliding-window, and MLA (DeepSeek-style latent compression). What to write yourself vs what to call. |
+| 13 | **Writing a Paged Attention Kernel in Triton** *(optional)* | For readers with a GPU: implement the paged-attention decode kernel in Triton, benchmark against the PyTorch gather from ch08 and against FlashAttention. Clearly marked skippable; nothing later depends on it. |
+| 14 | **Quantisation for Serving** | Weight-only INT8/INT4 (GPTQ, AWQ), FP8 on recent hardware, and **KV-cache quantisation** — usually the bigger win for long context, and usually the one people forget. Calibration, per-channel/group scales. Measure all three axes: quality (perplexity *and* a task eval), speed, memory. |
+| 15 | **Speculative Decoding** | Draft-model speculation, self-speculation (Medusa/EAGLE), and prompt-lookup n-gram. Derive the acceptance-rate maths and show *why* rejection sampling preserves the target distribution exactly — this is the chapter's real payload. Implement one variant. Show it winning at low batch and losing at high batch. |
+| 16 | **Constrained and Structured Decoding** | JSON-schema and grammar-constrained generation via FSM-driven logit masking (Outlines/XGrammar approach). Token healing. Where the masking cost lands, why naive implementations destroy throughput, and how constraints interact with speculation and prefix caching. |
+
+### Part V — Scaling Out (ch17–ch19)
+
+| # | Chapter | What the reader does |
+|---|---|---|
+| 17 | **Multi-GPU: Tensor, Pipeline and Expert Parallelism** | Where the collectives go and what they cost. Tensor parallelism for a single layer (all-reduce per block), pipeline parallelism and its bubbles, expert parallelism for MoE. NCCL basics; the things that break (head counts not divisible, uneven splits, one slow rank). When quantisation is the better answer than another GPU. |
+| 18 | **Multi-Replica: Routing, Autoscaling and Cold Starts** | Why round-robin is the wrong LLM load balancer. Cache-aware/prefix-affinity routing, least-outstanding-tokens. Autoscaling on queue depth rather than CPU. Cold starts: weight loading (safetensors mmap), warmup and CUDA-graph capture, and why the first request after a deploy is always terrible. |
+| 19 | **Multi-Tenancy and LoRA at Serving Time** | Serve many adapters on one base model with batched adapter application (S-LoRA pattern). Per-tenant fairness, quotas, rate limits, and noisy-neighbour isolation in a shared KV cache. |
+
+### Part VI — Serving Patterns by Workload (ch20–ch23)
+
+The same engine, tuned four different ways. The point of the part: there is no single optimal
+configuration, and the workload's length distribution decides almost everything.
+
+| # | Chapter | Workload characteristics and what changes |
+|---|---|---|
+| 20 | **Chat and Assistants** | Long shared system prompts, multi-turn growth, human-perceptible streaming. Prefix caching and session affinity dominate; ITL matters more than throughput. |
+| 21 | **RAG and Long Context** | Prefill-heavy, enormous prompts, KV pressure. Chunked prefill + prefix cache + KV quantisation together. Co-serving embedding and reranker models on the same hardware. |
+| 22 | **Agents and Tool Use** | Many short, highly repetitive calls; cancellation is constant; tail latency amplifies across a chain of N calls. Prefix reuse and cheap cancellation are worth more than raw throughput. |
+| 23 | **Code Completion and Offline Batch** | The two extremes: fill-in-the-middle completion needing single-digit-millisecond TTFT and aggressive speculation, versus offline batch inference where latency is irrelevant and only tokens-per-dollar counts. |
+
+### Part VII — Running It in Production (ch24–ch28)
+
+| # | Chapter | What the reader does |
+|---|---|---|
+| 24 | **The API Surface** | OpenAI-compatible `/v1/chat/completions`, SSE streaming, usage accounting, tool-call plumbing. Client disconnect and cancellation — wasted GPU nobody notices. Backpressure, timeouts, request size limits. Chat templates and the many ways they are silently wrong. |
+| 25 | **Observability for Serving Engines** | The signals that explain the engine, not just the box: queue depth, KV utilisation, preemption rate, batch-size histogram, prefix-cache hit rate, speculation acceptance rate, TTFT/ITL histograms. OpenTelemetry traces across the request lifecycle. What a good dashboard looks like, and SLO burn-rate alerting. |
+| 26 | **Reliability and Operations** | Load shedding and graceful degradation. Draining and rolling upgrades without dropping in-flight streams. Failure modes: OOM under a length spike, NaN/inf, GPU fault, and the worst one — silent quality regression after a config change. Runbook-shaped. |
+| 27 | **Cost and Capacity Planning** | Derive $/million tokens from hardware cost, utilisation and token mix. The batch-size vs SLO frontier and where to sit on it. Hardware selection, spot/preemptible economics, and an honest build-vs-buy comparison against hosted APIs. Ends with a capacity model the reader can reuse. |
+| 28 | **Benchmarking and Verifying a Serving Stack** | How to run a comparison nobody can dismiss: trace-driven load with realistic length distributions, warmup, statistical reporting, version pinning. Correctness verification — output-distribution equivalence tests, not eyeballing. Then a fair run of our engine against vLLM, SGLang, TGI and TensorRT-LLM. |
+
+### Capstone
+
+| # | Chapter | What the reader does |
+|---|---|---|
+| 29 | **The Finished Engine** | The full scorecard from ch01 to now, in one table. A design retrospective: what we built, what we deliberately did not (multi-node, MoE routing at scale, custom CUDA), and what each omission would cost. Then a guided map into vLLM, SGLang and TensorRT-LLM source, showing where each chapter's concept lives in each codebase — so the reader can read the real thing fluently. |
+
+### Appendices
+
+| # | Appendix | Contents |
+|---|---|---|
+| A | **GPU and Hardware Primer for Serving** | HBM vs SRAM, SMs, tensor cores, NVLink/PCIe, MIG, and the handful of spec-sheet numbers that actually predict serving performance. |
+| B | **Environment Setup** | Three supported paths: CPU-only laptop, single consumer GPU, rented cloud GPU. Exact versions, install scripts, and how to verify the setup before Chapter 1. |
+| C | **Code Map of the Reference Engine** | Module-by-module tour of `llmserve/`, with the chapter that introduced each piece. |
+| D | **Glossary** | TTFT, ITL, TPOT, goodput, prefill, decode, paged attention, block table, continuous batching, speculation acceptance rate, and ~40 more. |
+| E | **Reading List** | The primary sources, grouped by chapter: Orca (iteration-level scheduling), vLLM/PagedAttention, FlashAttention 1–3, SGLang/RadixAttention, Sarathi-Serve (chunked prefill), DistServe and Splitwise (disaggregation), speculative decoding (Leviathan et al., Chen et al.), Medusa, EAGLE, GPTQ, AWQ, SmoothQuant, LLM.int8(), S-LoRA, Outlines/XGrammar. |
+
+---
+
+## 5. Hardware and execution strategy
+
+This is the hardest practical problem for this book and the one most likely to sink it. A book
+about GPU serving whose examples nobody can run is a blog post with extra steps.
+
+**Three-tier approach:**
+
+| Tier | Hardware | Model | What works |
+|---|---|---|---|
+| **Default** | Any laptop, CPU-only | Qwen2.5-0.5B-Instruct (GPT-2 124M for the tiniest demos) | Every mechanism in the book runs: KV cache, continuous batching, paged blocks, prefix caching, scheduling, the full API server. Absolute numbers are not GPU numbers, but the *ratios and mechanisms* hold. |
+| **Recommended** | One 24 GB consumer GPU (RTX 3090/4090) or cloud L4/A10G | Qwen2.5-1.5B / Llama-3.2-1B-Instruct, plus a 7–8B model for realism | All published scorecard numbers, quantisation, Triton kernel, speculation. |
+| **Advanced** | 2–4× A100/H100, rented hourly | 7–8B and one 70B quantised | Parts V chapters 17–18 only. Each of these chapters states the hourly cost of reproducing it. |
+
+**Rules that follow from this:**
+
+- Every chapter states its tier in the header. No chapter above Tier 1 is a prerequisite for
+  a later Tier 1 chapter, so a laptop-only reader can complete the main arc.
+- The engine is written so the device is a parameter, not an assumption. CPU is a supported
+  backend, not a degraded mode.
+- CI runs the Tier 1 path only ([§9](#9-build-and-publishing-pipeline)). GPU results are
+  generated manually by a committed script and checked in as data.
+- Model weights are never committed. Chapter 1 includes a download-and-verify step, and the
+  book works with any small instruct model so it survives a model being pulled from the Hub.
+
+---
+
+## 6. Companion code
+
+A book called *from scratch* lives or dies on its code being real, runnable, and readable.
+
+### 6.1 Layout
+
+The code lives in the **same repository** as the book (not a separate repo), so a chapter and
+its code can never drift out of sync:
+
+```
+llm-serving-from-scratch/
+├── llmserve/                    # the engine, built up across the book
+│   ├── config.py
+│   ├── tokenizer.py             # ch04: incremental detokenisation
+│   ├── sampling.py              # ch04
+│   ├── cache/                   # ch05, ch08: KV cache, blocks, allocator
+│   ├── scheduler/               # ch07, ch10: continuous batching, policy
+│   ├── prefix/                  # ch09: hash + radix prefix cache
+│   ├── attention/               # ch12, ch13: paged attention backends
+│   ├── quant/                   # ch14
+│   ├── speculative/             # ch15
+│   ├── constrain/               # ch16
+│   ├── parallel/                # ch17
+│   ├── engine.py                # the step() loop
+│   └── server/                  # ch24: OpenAI-compatible API, SSE
+├── bench/                       # ch02: load generator, traces, scorecard
+│   ├── harness.py
+│   ├── traces/
+│   └── results/*.json           # committed, hardware-stamped
+├── tests/                       # equivalence + unit tests (CPU, run in CI)
+├── chapters/                    # ch01.qmd … ch29.qmd
+├── appendices/
+└── ...                          # see §8
+```
+
+### 6.2 Per-chapter checkpoints
+
+Readers must be able to start at any chapter. Two mechanisms:
+
+- **Git tags** `ch07-continuous-batching`, `ch08-paged-attention`, … one per engine-changing
+  chapter. `git checkout ch07-continuous-batching` gives the engine exactly as it stood at the
+  end of that chapter.
+- **A `CHECKPOINTS.md`** table mapping chapter → tag → one-line description of the engine's
+  state → the scorecard row it produced.
+
+Chapter text quotes code from the working tree via Quarto's `include-code-files` extension
+(already vendored in the embeddings book's `_extensions/`) rather than duplicating it inline.
+**This is non-negotiable**: copy-pasted code in prose rots within two chapters.
+
+### 6.3 How numbers get into the book
+
+1. `bench/harness.py` writes `bench/results/<chapter>-<tier>-<date>.json`, stamping model,
+   hardware, driver, library versions, trace, and request rate.
+2. Chapters read those JSON files and render the scorecard table programmatically.
+3. `scripts/verify-numbers.py` fails CI if a chapter references a result file that does not
+   exist or is older than the code it describes.
+
+No number is ever typed into prose by hand. This is what lets the book make performance
+claims credibly and keeps it honest when a library upgrade changes the answer.
+
+### 6.4 Correctness testing
+
+Per [§1.2](#12-what-makes-it-different), each optimisation gets an equivalence test:
+
+- **Greedy equivalence:** optimised path must produce token-identical output to the
+  HuggingFace reference for a fixed set of prompts.
+- **Distributional equivalence:** for sampling paths (notably speculative decoding), compare
+  empirical token distributions over many seeds with a statistical test.
+- **Invariant checks:** prefix-cache hits must not change output; paging must not change
+  output; quantisation gets a *bounded* quality-delta assertion rather than exact equality.
+
+These run on CPU in CI, so every push proves the engine is still correct.
+
+---
+
+## 7. Toolchain
+
+**Recommendation: Quarto**, matching `snowch/embeddings-at-scale-book`.
+
+| Criterion | Quarto | MyST |
+|---|---|---|
+| HTML + PDF + EPUB from one source | Yes, already proven in the embeddings book | HTML strong; PDF/EPUB weaker |
+| Cached execution (`freeze: auto`) | Yes — essential here, since GPU code cannot run in CI | `_build` caching, less suited to selective freeze |
+| Author's existing tooling | Established: `_quarto.yml`, `_freeze/`, `_extensions/include-code-files`, publish workflow | Used for `snowch.github.io` itself and `learn_probability` |
+| Code include from source files | `include-code-files` extension, already vendored | Possible, less ergonomic |
+
+The deciding factor is `freeze: auto` plus `include-code-files`: this book needs cached
+outputs (GPU results can't be regenerated in CI) and needs code quoted from a live package.
+
+**Noted counter-signal:** there are recent forks of `mystmd` and `jupyter-book` under the
+account, which may indicate an intended move to MyST. If the site is consolidating on MyST,
+switch — but do it before Chapter 1, not at Chapter 12. Flagged as an open decision
+([§13](#13-decisions-to-confirm)).
+
+**Stack:** Quarto (HTML/PDF/EPUB) · Python 3.11 · PyTorch · `transformers`/`tokenizers` ·
+FastAPI + uvicorn · `ruff` (lint/format, pinned) · `pytest` · `pre-commit` · GitHub Actions →
+GitHub Pages.
+
+---
+
+## 8. Repository layout
+
+Following the conventions already established in `embeddings-at-scale-book`, with the
+code-package addition from [§6](#6-companion-code):
+
+```
+llm-serving-from-scratch/
+├── _quarto.yml               # book config: parts, chapters, formats
+├── index.qmd                 # preface: why this book, how to read it, tiers
+├── chapters/ch01..ch29.qmd
+├── appendices/appendix_a..e.qmd
+├── llmserve/                 # the engine (§6.1)
+├── bench/                    # harness + committed results
+├── tests/
+├── scripts/
+│   ├── ci-check.sh           # the exact checks CI runs, runnable locally
+│   ├── run-benchmarks.sh     # GPU-tier regeneration (manual)
+│   ├── verify-numbers.py     # §6.3 guard
+│   ├── generate-sitemap.py
+│   └── convert-to-notebooks.sh
+├── references.bib            # primary sources (appendix E)
+├── references.qmd
+├── styles.css · head.html · footer.html
+├── cover.jpg · cover-sidebar.jpg
+├── robots.txt
+├── pyproject.toml            # ruff config + package metadata
+├── requirements.txt
+├── .pre-commit-config.yaml
+├── .github/workflows/{quality.yml,publish.yml}
+├── .claude/SessionStart      # bootstrap deps so web sessions can run tests
+├── AUTHORING_GUIDE.md
+├── CHECKPOINTS.md            # §6.2
+├── CLAUDE.md
+├── PLAN.md                   # this file
+├── LICENSE                   # CC-BY-NC-4.0 (prose)
+├── LICENSE-CODE              # Apache-2.0 (llmserve/, bench/, tests/)
+└── README.md
+```
+
+**Licensing note:** the embeddings book uses CC-BY-NC-4.0 throughout. That is wrong for this
+book's code — a non-commercial licence makes `llmserve/` useless as a reference implementation
+people can borrow from. Split the licence: CC-BY-NC-4.0 for prose, Apache-2.0 for code, stated
+clearly in the README.
+
+---
+
+## 9. Build and publishing pipeline
+
+Two workflows, deliberately *not* a copy of the embeddings book's setup — see the gotchas.
+
+**`quality.yml`** — on every push and PR:
+- `ruff check` + `ruff format --check` on `llmserve/`, `bench/`, `tests/`, `scripts/`
+- `pytest tests/` — CPU tier only, including the equivalence tests from [§6.4](#64-correctness-testing)
+- `python scripts/verify-numbers.py`
+- link check on rendered HTML
+
+**`publish.yml`** — on push to `main` **after** `quality.yml` succeeds, plus `workflow_dispatch`:
+- Setup Quarto + Python 3.11, `pip install -r requirements.txt`
+- `quarto render` (HTML + PDF via TinyTeX + EPUB), with `freeze: auto` so no GPU code executes
+- Generate and validate `sitemap.xml`; copy `robots.txt`; `touch .nojekyll`
+- Upload `_book/` as the Pages artifact and deploy
+
+Published to `https://snowch.github.io/llm-serving-from-scratch/` with GitHub Pages source set
+to **GitHub Actions**.
+
+### Gotchas observed in `embeddings-at-scale-book` — do not repeat
+
+1. **`publish.yml` waits on a workflow that no longer exists.** Its trigger is
+   `workflow_run: workflows: ["Code Quality"]`, but `.github/workflows/` contains only
+   `publish.yml`. The effect is that the book publishes on manual dispatch only. Either commit
+   the quality workflow under exactly that name, or trigger publish directly on push to `main`.
+   *(Worth fixing in that repo too — it is almost certainly not intentional.)*
+2. **`scripts/ci-check.sh` lints `code_examples/`, which does not exist in the repo.** Keep
+   lint paths and real directories in sync, and make `ci-check.sh` the single source of truth
+   that both CI and pre-commit invoke.
+3. **A dangling `_freeze/` is a silent-staleness trap.** With `freeze: auto`, a stale freeze
+   can publish outdated results indefinitely. `verify-numbers.py` ([§6.3](#63-how-numbers-get-into-the-book))
+   is the guard; add a scheduled monthly `workflow_dispatch` reminder to regenerate GPU results.
+
+---
+
+## 10. Linking from snowch.github.io
+
+The ask is that this be linkable from the site. Four concrete edits in
+`snowch/snowch.github.io`, all modelled on how *Embeddings at Scale* is already wired in:
+
+**1. Register the project site** in `myst.yml` so it joins the sitemap index:
+
+```yaml
+  project_sites:
+    - learn_probability
+    - embeddings-at-scale-book
+    - learn_linear_algebra
+    - llm-serving-from-scratch      # add
+```
+
+**2. Add a landing page** `llm-serving.md` at the site root, mirroring `embeddings.md`:
+title, a paragraph on what the book covers, a *Topics Covered* list, and a prominent
+**[LLM Serving from Scratch →](https://snowch.github.io/llm-serving-from-scratch/)** link.
+This page — not the book — is what ranks on the site and what gets linked from LinkedIn/talks.
+
+**3. Add it to the site TOC** in `myst.yml`, alongside the other book entries:
+
+```yaml
+    - file: embeddings.md
+      title: Embeddings at Scale Book
+    - file: llm-serving.md
+      title: LLM Serving from Scratch Book    # add here — before the non-book pages
+```
+
+**4. Cross-link from the existing LLM series** (the highest-intent traffic the site already
+has, per [§2](#2-relationship-to-existing-snowchgithubio-content)):
+- `ai-eng/llmfs-scaling/index.md` — add a line to *The Series* table and a closing pointer:
+  serving is where this series ends and the book begins.
+- `ai-eng/llmfs-scaling/L21_Deployment_Serving.md` — callout at the top linking to the book.
+- `ai-eng/llmfs-scaling/L20_Quantization_Inference.md` and `L17_Attention_Optimizations.md` —
+  same callout, pointing at ch14 and ch12/ch13 respectively.
+
+**Not needed:** an entry in `books.md`. That table is for external/older guides; the major
+books each get their own landing page and TOC entry.
+
+---
+
+## 11. Delivery roadmap
+
+The book should be *linkable and useful* long before it is finished — the site already marks
+in-progress work `[DRAFT]`, so shipping incrementally is consistent with existing practice.
+
+| Release | Contents | Why this is the cut |
+|---|---|---|
+| **v0.1 — Foundations** | Repo scaffolding, CI, Pages deploy · index/preface · ch01–ch03 · `bench/` harness · Tier 1 environment (Appendix B) | Establishes the baseline *and* the scorecard. Nothing later can be written credibly without the harness. Site link goes live here. |
+| **v0.2 — The Decode Loop** | ch04–ch06 · `llmserve` KV cache + static batching · equivalence tests · first three scorecard rows | Proves the measure-every-chapter format works end to end at small scale. |
+| **v0.3 — The Engine** | ch07–ch10 · continuous batching, paged blocks, prefix cache, chunked prefill · checkpoint tags | The centre of gravity. At this point the book is already the most useful thing on the site about serving. |
+| **v0.4 — Cheaper Math** | ch12, ch14, ch15 · quantisation + speculation · GPU-tier results published | First release with meaningful GPU numbers; needs the Tier 2 machine. |
+| **v0.5 — API and Operations** | ch24–ch26 · OpenAI-compatible server, observability, reliability | Pulled forward ahead of Parts V–VI: a reader with the engine plus an API plus a dashboard can actually deploy something. Highest practical value per page. |
+| **v0.6 — Scale and Patterns** | ch11, ch13, ch16–ch23 · disaggregation, Triton, constrained decoding, multi-GPU, workload patterns | The advanced and specialist material, once the core arc is solid. |
+| **v1.0 — Complete** | ch27–ch29 · appendices A–E · PDF + EPUB · framework comparison · full scorecard | Costing, honest benchmarking, and the capstone retrospective land last because they summarise everything before them. |
+
+**Rationale for the ordering:** Parts are written in dependency order except that Part VII's
+API/observability chapters are pulled ahead of Parts V–VI. That is deliberate — an engine with
+an API and a dashboard is deployable; an engine with tensor parallelism but no API is not.
+
+---
+
+## 12. Conventions and quality bar
+
+### 12.1 Chapter template
+
+Every chapter follows the same shape, so the book reads as one system:
+
+1. **Header block** — tier (CPU / single GPU / multi GPU), prerequisites, the scorecard row
+   this chapter will move.
+2. **The problem** — a measurement from the previous chapter that is unacceptable, shown, not
+   asserted.
+3. **The idea** — the mechanism, from first principles, with the arithmetic.
+4. **The build** — incremental implementation, code quoted from `llmserve/`.
+5. **The measurement** — scorecard re-run, new row, one paragraph on why it moved.
+6. **The cost** — what this technique made worse (complexity, latency variance, quality,
+   memory). Never skipped; every chapter has one.
+7. **Key takeaways** — 3–5 bullets.
+8. **Looking ahead** — the transition that sets up the next chapter's problem.
+9. **Further reading** — primary sources, cited via `references.bib`.
+
+### 12.2 Style
+
+- British English, second person, active voice. Short sentences.
+- Mathematics only where it predicts something the reader will then verify.
+- Every diagram must show a mechanism (block table indirection, the scheduler state machine,
+  prefill/decode interleaving on a timeline) — no decorative figures.
+- Numbers always carry their conditions: hardware, model, dtype, request rate, trace, date.
+- `[DRAFT]` in the chapter title while incomplete, matching the site's existing convention;
+  removed only when the chapter meets [§12.3](#123-definition-of-done).
+
+### 12.3 Definition of done (per chapter)
+
+- [ ] Code merged into `llmserve/` and passing `ruff` + `pytest` on CPU
+- [ ] Equivalence test added for any behaviour-affecting change
+- [ ] Scorecard row regenerated from a committed result file (not hand-typed)
+- [ ] Checkpoint tag pushed, `CHECKPOINTS.md` updated
+- [ ] "The cost" section written — the chapter is not done while the trade-off is missing
+- [ ] Cross-references and `references.bib` entries resolve; `quarto render` clean
+- [ ] `[DRAFT]` removed
+
+### 12.4 Version pinning and staleness
+
+This is the fastest-moving topic the author has written about; a book on it is stale in months
+unless designed against that.
+
+- Pin exact versions in `requirements.txt`; state them in Appendix B and in each chapter that
+  depends on library behaviour.
+- Prefer mechanisms over APIs: the paged-attention *idea* will outlive any vLLM API. Where a
+  library call is shown, show the mechanism first.
+- Date-stamp every benchmark and put a "last verified" line in the preface.
+- Keep a short `CHANGELOG.md` so returning readers can see what moved.
+
+---
+
+## 13. Decisions to confirm
+
+Four choices are worth settling before Chapter 1 is written, because changing them later is
+expensive. Recommendations given; all are reversible now and painful later.
+
+| # | Decision | Recommendation |
+|---|---|---|
+| 1 | **Quarto or MyST?** The recent `mystmd`/`jupyter-book` forks suggest a possible move. | **Quarto** — `freeze: auto` and `include-code-files` are load-bearing here ([§7](#7-toolchain)). Revisit only if the site is consolidating on MyST. |
+| 2 | **Hardware floor.** CPU-first with GPU optional, or GPU-required? | **CPU-first** ([§5](#5-hardware-and-execution-strategy)). Costs some realism in early chapters; buys a readership that isn't gated on owning a GPU. |
+| 3 | **Fate of the L17/L20/L21 drafts.** | Finish them as short summaries that link into the book ([§2](#2-relationship-to-existing-snowchgithubio-content)). Keeps existing inbound links working; avoids maintaining two depths of the same material. |
+| 4 | **Include the Triton kernel chapter (ch13)?** | **Include, clearly optional.** It is the most "from scratch" chapter in the book and a real differentiator, but it raises the hardware bar — so nothing depends on it. |
+
+Two smaller ones, easily deferred: whether to publish per-part EPUBs (the embeddings book
+does, via `scripts/generate-part-epubs.sh`), and whether chapters ship as downloadable
+notebooks (`scripts/convert-to-notebooks.sh`) — both are copy-forward wins if wanted, neither
+blocks authoring.
+
+---
+
+## 14. Immediate next steps
+
+1. Settle the four decisions in [§13](#13-decisions-to-confirm).
+2. Scaffold the repo per [§8](#8-repository-layout): `_quarto.yml` with all seven parts and 29
+   chapter stubs, `pyproject.toml`, `requirements.txt`, both workflows, `.claude/SessionStart`.
+3. Enable GitHub Pages on this repo with source = GitHub Actions; confirm an empty book deploys
+   to `https://snowch.github.io/llm-serving-from-scratch/` before writing prose.
+4. Make the four `snowch.github.io` edits in [§10](#10-linking-from-snowchgithubio) so the link
+   exists from day one, with the landing page marked *in progress*.
+5. Build `bench/harness.py` and ch01–ch03 as v0.1. **Do not write an optimisation chapter
+   before the harness exists** — without it the book's central promise cannot be kept.
