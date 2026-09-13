@@ -1,10 +1,10 @@
 ---
 title: "Code Completion and Offline Batch"
-short_title: "ch23 Code Completion and Offline Batch"
+short_title: "ch23 Completion and Offline Batch"
 ---
 
 (ch23)=
-# ch23 · Code Completion and Offline Batch [DRAFT]
+# ch23 · Code Completion and Offline Batch
 
 :::{note} Chapter header
 :class: dropdown
@@ -12,59 +12,133 @@ short_title: "ch23 Code Completion and Offline Batch"
 | | |
 |---|---|
 | **Tier** | Tier 1 — CPU (any laptop) |
-| **Prerequisites** | [ch15](#ch15), [ch10](#ch10) |
-| **Scorecard** | Two opposite configurations of the same engine, at both extremes of the frontier. |
+| **Prerequisites** | [ch02](#ch02), [ch07](#ch07), [ch15](#ch15) |
+| **Scorecard** | Two workloads at opposite ends of one axis, reading the same table in opposite directions. |
 :::
 
-## The problem
+## Two workloads, one axis
 
-Two workloads break our assumptions in opposite directions: completion needs TTFT humans cannot perceive, and offline batch does not care about latency at all.
+Code completion and offline batch inference look similar from the outside. Similar model, similar
+request sizes, no human reading a stream of tokens in either case. Almost every configuration
+decision comes out opposite, and the reason is a single question: **is anyone waiting?**
 
-[To write: open with the measurement from the previous chapter that is unacceptable. Show it,
-do not assert it.]
+For completion, someone is waiting and they are waiting *impatiently*. A suggestion that arrives
+after the developer has typed the next character is worth nothing — not less, nothing. The objective
+is a time to first token in the tens of milliseconds, and throughput is close to irrelevant.
 
-## The idea
+For offline batch, nobody is waiting at all. There is no arrival process to model, no service
+objective to miss, and exactly one number: tokens per unit of hardware time.
 
-- Code completion: fill-in-the-middle prompting, single-digit-millisecond TTFT targets, aggressive speculation (ch15 wins big at batch 1)
-- Why completion is the best case for speculation and the worst case for large batches
-- Offline batch: latency is irrelevant, so maximise tokens per dollar — huge batches, maximum quantisation, full device saturation
-- Sorting and bucketing offline work by length to eliminate ragged waste
+## Code completion
 
-[To write: develop the mechanism from first principles, with the arithmetic that predicts the
-result.]
+```{include} _generated/ch23-completion.md
+```
 
-## The build
+The objective here is deliberately brutal, and the `Met SLO` column shows the engine mostly failing
+it. That is the honest outcome and it is the useful one: **this workload is hard, and a general
+serving configuration does not meet it.**
 
-- A completion configuration: low batch, speculation on, tight token budget
-- A batch configuration: maximum batch, sorted by length, quantised
-- Measure both against the same engine build
+What the table does say clearly is that serving one request at a time is the worst possible choice,
+which is not the intuition. A completion request is tiny; the reflex is to keep the batch small so
+each one is served immediately. But at a realistic arrival rate a small batch means a queue, and
+queueing is the dominant term in time to first token — so the configuration that minimises
+per-request work maximises per-request latency.
 
-[To write: incremental implementation. Quote code from `llmserve/` with `{literalinclude}`
-and `:start-at:` / `:end-at:` anchors — never paste it inline.]
+What actually moves this number is not in this table, and it is worth saying so plainly:
 
-## The measurement
+- **{ref}`ch09`'s prefix cache**, because a developer's file barely changes between keystrokes. The
+  same buffer is re-sent with one more character, which is a near-perfect cache hit. The framing
+  table in {ref}`ch20` shows a high reuse rate for exactly this reason.
+- **{ref}`ch15`'s speculation**, because code is the most predictable text there is. Acceptance rates
+  on code are far above prose, and speculation attacks decode latency, which is what is left once
+  prefill is cached away.
+- **A smaller model.** The uncomfortable truth of this workload: single-digit-millisecond TTFT is
+  reached by not running a large model, and the serving stack cannot fix a model that is too big for
+  the objective.
+- **Cancelling superseded requests** ({ref}`ch22`). Every keystroke invalidates the last request, so
+  a completion service that does not cancel is doing several times the work it needs to.
 
-Two rows at opposite ends: minimum TTFT achieved, and maximum tokens/dollar achieved.
+## Offline batch
 
-[To write: re-run the harness, append the scorecard row, and explain in one paragraph why the
-number moved. Read the figures from `bench/results/` — never type a number into prose
-(PLAN.md §6.3).]
+```{include} _generated/ch23-offline.md
+```
+
+Every request is available at time zero, so there is no arrival process — and removing it removes
+the entire reason {ref}`ch02`'s harness is open-loop:
+
+```{literalinclude} ../bench/traces.py
+:language: python
+:start-at: def make_offline_batch_trace
+:end-before:     rng = np.random.default_rng(seed)
+```
+
+The table reads in the opposite direction to {ref}`ch20`'s. Throughput rises with batch size and
+there is no latency column to trade it against, so the answer is simply *the largest batch that
+fits*. The KV utilisation column is how you find that: push the batch until the allocator is close
+to full, and stop before preemption starts, because a preempted sequence recomputes its prefill and
+that is pure loss.
+
+Two things this workload can do that no interactive one can:
+
+**Sort by length.** Nothing is waiting, so the order requests are served in is free to choose.
+Grouping similar lengths together dramatically reduces the padding waste of {ref}`ch06` — the reason
+static batching wasted a third of its slots was length variance within a batch, and offline is the
+one workload where you can simply remove it.
+
+**Accept much worse tail latency for throughput.** Every trade-off in this book that was rejected
+because it hurt the tail should be re-examined here, and most of them flip.
+
+## The general point
+
+These two chapters-worth of tuning come from the same engine and the same code. Nothing was
+recompiled; a handful of numbers changed. That is the argument for Part VI as a whole, and the
+reason the framing table in {ref}`ch20` has no "best" row.
+
+It also means **a benchmark without a workload is not a result.** An engine tuned for offline batch
+will beat one tuned for completion on a throughput benchmark, by a lot, and lose on any latency
+measure — and both engines are the same software. {ref}`ch28` is about how to run comparisons that
+survive this observation.
 
 ## The cost
 
-Neither configuration is acceptable for the other workload. If you must serve both, you need two pools — which is a capacity decision (ch27), not a tuning one.
-
-[To write: what did this make worse? Complexity, latency variance, quality, memory, operational
-burden. This section is mandatory — the chapter is not done without it (PLAN.md §12.3).]
+- **Two configurations means two deployments**, or one deployment that is wrong for one of the
+  workloads. Mixing completion and batch traffic on one fleet gives the batch work the completion
+  fleet's low utilisation and the completion traffic the batch fleet's tail.
+- **Completion's objective may not be reachable** with the model you have, and no amount of serving
+  work changes that. Recognising it early is worth more than tuning.
+- **Offline batch at maximum batch size runs close to the memory limit**, where {ref}`ch08`'s
+  preemption waits. Preemption in a batch job is silent — no SLO to miss — and shows up only as
+  throughput that is lower than it should be.
+- **Length sorting changes completion order**, which matters if anything downstream assumed
+  submission order. It usually did, and it usually did not say so.
+- **Cancellation becomes load-bearing for completion**, with all the race conditions {ref}`ch22`
+  lists, on the workload least tolerant of latency spikes.
 
 ## Key takeaways
 
-- [To write: 3–5 bullets, each a claim the chapter earned.]
+- The question that separates these workloads is "is anyone waiting", and it decides nearly every
+  other setting.
+- For completion, small batches are the wrong reflex: queueing dominates time to first token, so
+  the batch that minimises per-request work maximises per-request latency.
+- Completion's real wins are prefix caching, speculation, cancellation and a smaller model — not
+  scheduler tuning.
+- Offline batch removes the arrival process entirely, which removes the reason for an open-loop
+  harness and licenses every throughput-for-latency trade in this book.
+- Offline batch can sort by length, which removes the padding waste {ref}`ch06` could only mitigate.
+- **The same engine, tuned two ways, produces opposite answers from the same table.** A benchmark
+  without a stated workload is not a result.
 
 ## Looking ahead
 
-[To write: the transition that sets up the next chapter's problem.]
+Part VI is done. The engine has been tuned four ways for four workloads, and every one of those
+tunings assumed something that has not been built yet: that requests arrive through an API, that
+somebody can see what the engine is doing, and that it degrades rather than fails when the
+assumptions break. Part VII builds that, starting with the surface a caller actually touches — and
+with a bug in it that silently undoes {ref}`ch09`.
 
 ## Further reading
 
-[To write: primary sources, cited with MyST citation syntax against `references.bib`.]
+The fill-in-the-middle literature is about training rather than serving and is worth reading anyway,
+because the prompt format it dictates decides what a completion request looks like and therefore what
+the cache can reuse. For the batch side, the relevant work is mostly about scheduling and bin-packing
+rather than about LLMs, and the older literature transfers cleanly.

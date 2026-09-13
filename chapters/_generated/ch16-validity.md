@@ -2,6 +2,6 @@
 
 | Generation | Valid JSON | Rate |
 |---|---|---|
-| Unconstrained | 0/40 | 0% |
-| Constrained, all attempts | 17/40 | 42% |
-| Constrained, reached end state | 17/17 | 100% |
+| Unconstrained | 0/60 | 0% |
+| Constrained, all attempts | 11/60 | 18% |
+| Constrained, reached end state | 11/11 | 100% |

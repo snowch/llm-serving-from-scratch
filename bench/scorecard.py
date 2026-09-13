@@ -31,7 +31,8 @@ def load(name: str) -> dict:
     path = RESULTS_DIR / (name if name.endswith(".json") else f"{name}.json")
     if not path.exists():
         raise FileNotFoundError(
-            f"{path} does not exist. Regenerate results with `python -m bench.run_v01`."
+            f"{path} does not exist. Generate it with the bench/run_*.py that writes it — "
+            f"`grep -rl {name} bench/run_*.py` names the one."
         )
     return json.loads(path.read_text())
 
@@ -80,9 +81,24 @@ def conditions(name: str) -> str:
         f"{hw.get('cpu_count', '?')}x {hw.get('machine', '?')} CPU, "
         f"torch {versions.get('torch', '?')}, "
         f"{cond.get('trace', 'unknown trace')}, "
-        f"arrival rate {cond.get('rate_per_second', '?')}/s, "
+        f"{_rate_text(cond)}, "
         f"measured {data.get('generated_at', 'unknown date')}."
     )
+
+
+def _rate_text(conditions: dict) -> str:
+    """How the arrival rate is stated, which is not always one number.
+
+    A result that sweeps the arrival rate has no single rate, and printing "arrival rate ?/s" under
+    it is worse than saying nothing — it reads like a missing field rather than a deliberate sweep.
+    """
+    if "rates" in conditions:
+        rates = conditions["rates"]
+        joined = ", ".join(f"{r:g}" for r in rates)
+        return f"arrival rates {joined}/s"
+    if conditions.get("rate_per_second") is not None:
+        return f"arrival rate {conditions['rate_per_second']}/s"
+    return "no arrival process"
 
 
 def value(name: str, key: str):
@@ -372,4 +388,558 @@ def mask_cost_table(name: str = "constrained-tier1") -> str:
         per_mask = row["microseconds_per_mask"]
         # per_mask microseconds x 1,000 steps = per_mask milliseconds.
         lines.append(f"| {row['vocab_size']:,} | {per_mask:.0f} µs | {per_mask:.0f} ms |")
+    return "\n".join(lines)
+
+
+def routing_table() -> str:
+    """Chapter 18: what each routing policy buys and what it costs in balance."""
+    rows = [
+        ("Round-robin", "router-round-robin-tier1"),
+        ("Least outstanding tokens", "router-least-tokens-tier1"),
+        ("Prefix affinity", "router-prefix-affinity-tier1"),
+    ]
+    lines = [
+        "| Policy | TTFT p50 | Output tok/s | Goodput req/s | Prefix reuse | Load imbalance |",
+        "|---|---|---|---|---|---|",
+    ]
+    for label, name in rows:
+        data = load(name)
+        s, c = data["summary"], data["conditions"]
+        lines.append(
+            f"| {label} | {s['ttft_p50']}s | {s['output_tokens_per_second']} | "
+            f"{s['goodput_per_second']} | {c['token_reuse']:.0%} | {c['imbalance']:.2f}x |"
+        )
+    return "\n".join(lines)
+
+
+def cold_start_table() -> str:
+    """What a replica costs to start, before it can serve one token.
+
+    Arithmetic rather than measurement, for the same reason as chapter 11's handoff table: this
+    book's model loads instantly and says nothing about a real one, and the quantity that decides
+    whether autoscaling can work at all is how long the *weights* take to arrive.
+    """
+    links = [
+        ("Local NVMe (2 GB/s)", 2.0e9),
+        ("10 GbE (1.25 GB/s)", 1.25e9),
+        ("Object store (400 MB/s)", 4.0e8),
+    ]
+    cases = [
+        ("8B, fp16", 8e9, 2),
+        ("8B, INT4", 8e9, 0.5),
+        ("70B, fp16", 70e9, 2),
+        ("70B, INT4", 70e9, 0.5),
+    ]
+    header = "| Weights | Size | " + " | ".join(name for name, _ in links) + " |"
+    lines = [header, "|---" * (len(links) + 2) + "|"]
+    for label, params, bytes_per_param in cases:
+        payload = params * bytes_per_param
+        times = [f"{payload / bw:.0f} s" for _, bw in links]
+        lines.append(f"| {label} | {payload / 1e9:.0f} GB | " + " | ".join(times) + " |")
+    return "\n".join(lines)
+
+
+def lora_memory_table() -> str:
+    """What a tenant's fine-tune costs, as a full copy and as an adapter.
+
+    Arithmetic, for the same reason as chapter 11's handoff table: the argument for LoRA is
+    strongest at a scale this book's model cannot reach, and the shapes are all that is needed.
+    """
+    from llmserve.config import BYTES_PER_DTYPE, ModelConfig
+    from llmserve.lora import LoRAConfig, adapter_bytes
+
+    llama8b = ModelConfig(
+        vocab_size=128_256, n_layers=32, n_heads=32, n_kv_heads=8, head_dim=128, dtype="fp16"
+    )
+    full_copy = 8e9 * BYTES_PER_DTYPE["fp16"]
+    ranks = (8, 16, 64)
+
+    lines = [
+        "| Per-tenant weights | Size | Tenants in 16 GB |",
+        "|---|---|---|",
+        f"| Full fine-tuned copy | {full_copy / 1e9:.0f} GB | {int(16e9 // full_copy)} |",
+    ]
+    for rank in ranks:
+        size = adapter_bytes(llama8b, LoRAConfig(rank=rank))
+        lines.append(f"| LoRA adapter, rank {rank} | {size / 1e6:.1f} MB | {int(16e9 // size):,} |")
+    return "\n".join(lines)
+
+
+def lora_quality_table(name: str = "lora-tier1") -> str:
+    """Each adapter against each tenant's held-out text, with the base model as the control."""
+    quality = load(name)["summary"]["quality"]
+    tenants = sorted(quality)
+    columns = ["base", *tenants]
+    lines = [
+        "| Held-out text | "
+        + " | ".join(f"{c} adapter" if c != "base" else "Base" for c in columns)
+        + " |",
+        "|---" * (len(columns) + 1) + "|",
+    ]
+    for tenant in tenants:
+        row = quality[tenant]
+        cells = " | ".join(f"{row[c]:.4f}" for c in columns)
+        lines.append(f"| {tenant}'s corpus | {cells} |")
+    return "\n".join(lines)
+
+
+def lora_batch_table(name: str = "lora-tier1") -> str:
+    """What adapter diversity in one batch costs per decode step."""
+    rows = load(name)["summary"]["batch"]
+    baseline = next(r["ms"] for r in rows if r["distinct"] == 0)
+    lines = ["| Decode step | Distinct adapters | ms/step | Overhead |", "|---|---|---|---|"]
+    for row in rows:
+        overhead = (row["ms"] - baseline) / baseline * 100
+        lines.append(f"| {row['case']} | {row['distinct']} | {row['ms']:.3f} | {overhead:+.1f}% |")
+    return "\n".join(lines)
+
+
+def fairness_table() -> str:
+    """Per-tenant time to first token, first-come-first-served against weighted fair queueing."""
+    runs = [("FIFO (ch09)", "tenants-fifo-tier1"), ("Fair queue (ch19)", "tenants-fair-tier1")]
+    per_run = {label: load(stem)["summary"] for label, stem in runs}
+    tenants = sorted(next(iter(per_run.values())).get("by_tenant", {}))
+
+    lines = [
+        "| Scheduler | " + " | ".join(f"{t} TTFT p95" for t in tenants) + " | Completed |",
+        "|---" * (len(tenants) + 2) + "|",
+    ]
+    for label, summary in per_run.items():
+        by_tenant = summary.get("by_tenant", {})
+        cells = " | ".join(f"{by_tenant[t]['ttft_p95']}s" for t in tenants)
+        lines.append(f"| {label} | {cells} | {summary['completed']} |")
+    return "\n".join(lines)
+
+
+def workload_table() -> str:
+    """Part VI's framing table: one engine, one configuration, four workloads."""
+    rows = [
+        ("Chat", "workload-chat-tier1"),
+        ("Retrieval (RAG)", "workload-rag-tier1"),
+        ("Agent loop", "workload-agent-tier1"),
+        ("Code completion", "workload-completion-tier1"),
+    ]
+    lines = [
+        "| Workload | Mean prompt | Mean output | TTFT p95 | ITL p95 | Output tok/s | Prefix reuse |",
+        "|---|---|---|---|---|---|---|",
+    ]
+    for label, name in rows:
+        data = load(name)
+        s, c = data["summary"], data["conditions"]
+        lines.append(
+            f"| {label} | {c['mean_prompt_len']:.0f} | {c['mean_output_len']:.0f} | "
+            f"{s['ttft_p95']}s | {s['itl_p95']}s | {s['output_tokens_per_second']} | "
+            f"{c['token_reuse']:.0%} |"
+        )
+    return "\n".join(lines)
+
+
+def chat_turn_table(name: str = "chat-patterns-tier1") -> str:
+    """How prefix reuse behaves as a conversation deepens."""
+    rows = load(name)["summary"]["turns"]
+    lines = ["| Turn | Mean prompt tokens | Prefix reuse | ms per request |", "|---|---|---|---|"]
+    for row in rows:
+        lines.append(
+            f"| {row['turn']} | {row['prompt_tokens']:.0f} | {row['reuse']:.0%} | "
+            f"{row['ms_per_request']:.1f} |"
+        )
+    return "\n".join(lines)
+
+
+def chat_batch_table(name: str = "chat-patterns-tier1") -> str:
+    """Throughput against inter-token latency, which is what a streaming client feels."""
+    rows = load(name)["summary"]["batch"]
+    lines = [
+        "| Max batch | ITL p50 | ITL p95 | Output tok/s | Met SLO |",
+        "|---|---|---|---|---|",
+    ]
+    for row in rows:
+        lines.append(
+            f"| {row['max_batch_size']} | {row['itl_p50']}s | {row['itl_p95']}s | "
+            f"{row['output_tokens_per_second']} | {row['goodput_fraction']:.0%} |"
+        )
+    return "\n".join(lines)
+
+
+def rag_interference_table(name: str = "rag-tier1") -> str:
+    """What a long retrieval prefill does to the short requests sharing the engine."""
+    rows = load(name)["summary"]["budgets"]
+    lines = [
+        "| Arrivals | Prefill | Short TTFT p95 | Short ITL p95 | Long TTFT p95 | Output tok/s |",
+        "|---|---|---|---|---|---|",
+    ]
+    for row in rows:
+        label = (
+            f"Chunked, {row['token_budget']} tokens/step"
+            if row["chunked"]
+            else "One pass (no chunking)"
+        )
+        short, long = row["by_length"]["short"], row["by_length"]["long"]
+        lines.append(
+            f"| {row.get('rate_per_second', '—')}/s | {label} | {short['ttft_p95']}s | "
+            f"{short['itl_p95']}s | {long['ttft_p95']}s | {row['output_tokens_per_second']} |"
+        )
+    return "\n".join(lines)
+
+
+def agent_chain_table(name: str = "agents-tier1") -> str:
+    """Per-call latency resampled into chains, which is what an agent's user actually waits for."""
+    rows = load(name)["summary"]["chains"]
+    single = rows[0]
+    lines = [
+        "| Calls | Total p50 | Total p95 | Total p99 | p50 vs one call | p95 vs one call | p95/p50 |",
+        "|---|---|---|---|---|---|---|",
+    ]
+    for row in rows:
+        spread = row.get("p95_over_p50") or row["p95"] / row["p50"]
+        lines.append(
+            f"| {row['calls']} | {row['p50']}s | {row['p95']}s | {row['p99']}s | "
+            f"{row['p50'] / single['p50']:.1f}x | {row['p95'] / single['p95']:.1f}x | "
+            f"{spread:.2f} |"
+        )
+    return "\n".join(lines)
+
+
+def agent_cancellation_table(name: str = "agents-tier1") -> str:
+    """Work done for callers who have already gone away."""
+    data = load(name)["summary"]["cancellation"]
+    lines = ["| Engine | Steps taken | Tokens produced | Requests dropped |", "|---|---|---|---|"]
+    for label, key in (("Ignores cancellation", "without"), ("Honours it", "with_cancellation")):
+        row = data[key]
+        lines.append(
+            f"| {label} | {row['steps']:,} | {row['tokens_produced']:,} | {row['aborted']} |"
+        )
+    lines.append(
+        f"| **Saved** | **{data['steps_saved']:.0%}** | | "
+        f"({data['abandoned_fraction']:.0%} abandoned) |"
+    )
+    return "\n".join(lines)
+
+
+def completion_table(name: str = "offline-tier1") -> str:
+    """Code completion against a deliberately brutal time-to-first-token objective."""
+    rows = load(name)["summary"]["completion"]
+    lines = [
+        "| Max batch | TTFT p50 | TTFT p95 | Output tok/s | Met SLO |",
+        "|---|---|---|---|---|",
+    ]
+    for row in rows:
+        lines.append(
+            f"| {row['max_batch_size']} | {row['ttft_p50']}s | {row['ttft_p95']}s | "
+            f"{row['output_tokens_per_second']} | {row['goodput_fraction']:.0%} |"
+        )
+    return "\n".join(lines)
+
+
+def offline_table(name: str = "offline-tier1") -> str:
+    """Offline batch: no arrivals, no objective, one number."""
+    rows = load(name)["summary"]["offline"]
+    lines = [
+        "| Max batch | Wall time | Output tok/s | Peak KV utilisation | Preemptions |",
+        "|---|---|---|---|---|",
+    ]
+    for row in rows:
+        lines.append(
+            f"| {row['max_batch_size']} | {row['wall_time']}s | "
+            f"{row['output_tokens_per_second']} | {row['peak_kv_utilisation']:.0%} | "
+            f"{row['preemptions']} |"
+        )
+    return "\n".join(lines)
+
+
+def template_reuse_table(name: str = "api-tier1") -> str:
+    """What a chat template does to the prefix cache underneath it."""
+    rows = load(name)["summary"]["templates"]
+    lines = ["| Template | What differs | Prefix reuse |", "|---|---|---|"]
+    for row in rows:
+        lines.append(f"| {row['variant']} | {row['description']} | {row['token_reuse']:.0%} |")
+    return "\n".join(lines)
+
+
+def signal_timing_table(name: str = "observability-tier1") -> str:
+    """Queue depth and latency on one axis, so which moves first is a matter of record."""
+    rows = load(name)["summary"]["windows"]
+    lines = [
+        "| From step | Mean queue depth | Peak queue depth | KV utilisation | TTFT p95 |",
+        "|---|---|---|---|---|",
+    ]
+    for row in rows:
+        ttft = f"{row['ttft_p95']}s" if row.get("ttft_p95") is not None else "—"
+        lines.append(
+            f"| {row['step']} | {row['mean_queue_depth']} | {row['peak_queue_depth']} | "
+            f"{row['kv_utilisation']:.0%} | {ttft} |"
+        )
+    return "\n".join(lines)
+
+
+def instrumentation_cost_table(name: str = "observability-tier1") -> str:
+    """What sampling the engine on every step costs."""
+    data = load(name)["summary"]["overhead"]
+    report = load(name)["summary"]["report"]
+    rows = [
+        ("Wall time, instrumented", f"{data['instrumented_wall']}s"),
+        ("Wall time, bare", f"{data['bare_wall']}s"),
+        ("Overhead", f"{data['overhead_fraction']:+.1%}"),
+        ("Steps sampled", f"{report['steps']:,}"),
+        ("Peak queue depth", f"{report['peak_queue_depth']}"),
+        ("Peak KV utilisation", f"{report['peak_kv_utilisation']:.0%}"),
+    ]
+    lines = ["| Quantity | Value |", "|---|---|"]
+    lines += [f"| {a} | {b} |" for a, b in rows]
+    return "\n".join(lines)
+
+
+def shedding_table(name: str = "reliability-tier1") -> str:
+    """Goodput under overload, with and without admission control."""
+    rows = load(name)["summary"]["policies"]
+    lines = [
+        "| Policy | Rejected | Completed | TTFT p95 | Goodput req/s | Output tok/s |",
+        "|---|---|---|---|---|---|",
+    ]
+    for row in rows:
+        lines.append(
+            f"| {row['policy']} | {row['rejected']} | {row['completed']} | {row['ttft_p95']}s | "
+            f"{row['goodput_per_second']} | {row['output_tokens_per_second']} |"
+        )
+    return "\n".join(lines)
+
+
+def drain_table(name: str = "reliability-tier1") -> str:
+    """What is in flight when a deploy starts, and what killing the process would discard."""
+    data = load(name)["summary"]["drain"]
+    rows = [
+        ("Sequences in flight when the drain began", f"{data['in_flight_at_drain']}"),
+        ("Generated tokens that a hard stop would discard", f"{data['tokens_at_risk']}"),
+        ("Steps to finish them", f"{data['steps_to_drain']}"),
+        ("New requests refused during the drain", f"{data['new_requests_rejected']}"),
+    ]
+    lines = ["| Quantity | Value |", "|---|---|"]
+    lines += [f"| {a} | {b} |" for a, b in rows]
+    return "\n".join(lines)
+
+
+def cost_table() -> str:
+    """Cost per million tokens as a function of utilisation, which is the term people assume.
+
+    Arithmetic over stated inputs, not a measurement and not a price list. The hourly rate and the
+    throughput are the reader's to supply; what the table shows is the *shape* — that the same
+    hardware and the same engine produce wildly different costs depending on a number that usually
+    goes unstated.
+    """
+    from llmserve.cost import Deployment
+
+    rate, throughput = 3.0, 2500.0
+    lines = [
+        "| Utilisation | Tokens per hour | Cost per million tokens |",
+        "|---|---|---|",
+    ]
+    for utilisation in (0.1, 0.25, 0.4, 0.6, 0.9):
+        deployment = Deployment(
+            "reference",
+            dollars_per_hour=rate,
+            tokens_per_second=throughput,
+            utilisation=utilisation,
+        )
+        lines.append(
+            f"| {utilisation:.0%} | {deployment.tokens_per_hour / 1e6:.1f}M | "
+            f"${deployment.cost_per_million_tokens:.2f} |"
+        )
+    lines.append("")
+    lines.append(
+        f": At ${rate:.2f}/hour and {throughput:,.0f} sustained output tokens per second. "
+        "Substitute your own two numbers; the shape does not change."
+    )
+    return "\n".join(lines)
+
+
+def break_even_table() -> str:
+    """The volume at which a fixed hardware bill beats a per-token price."""
+    from llmserve.cost import Deployment, break_even_tokens_per_month
+
+    deployment = Deployment("reference", dollars_per_hour=3.0, tokens_per_second=2500.0)
+    monthly_bill = deployment.cost_per_hour * 24 * 30
+    lines = [
+        "| Hosted price per million tokens | Break-even volume per month | Utilisation it implies |",
+        "|---|---|---|",
+    ]
+    ceiling = deployment.tokens_per_second * 3600 * 24 * 30
+    for price in (0.20, 0.50, 1.00, 3.00):
+        volume = break_even_tokens_per_month(deployment, price)
+        if volume == float("inf"):
+            lines.append(f"| ${price:.2f} | beyond this fleet's capacity | — |")
+        else:
+            lines.append(f"| ${price:.2f} | {volume / 1e9:.2f}B tokens | {volume / ceiling:.0%} |")
+    lines.append("")
+    lines.append(
+        f": Against a fixed bill of ${monthly_bill:,.0f}/month. Below the break-even volume the "
+        "hosted API is cheaper and somebody else operates it."
+    )
+    return "\n".join(lines)
+
+
+def generator_table(name: str = "benchmarking-tier1") -> str:
+    """The same engine and workload under both load generators."""
+    rows = load(name)["summary"]["generators"]
+    lines = [
+        "| Generator | Setting | TTFT p50 | TTFT p95 | TTFT p99 | Achieved req/s |",
+        "|---|---|---|---|---|---|",
+    ]
+    for row in rows:
+        lines.append(
+            f"| {row['generator']} | {row['detail']} | {row['ttft_p50']}s | {row['ttft_p95']}s | "
+            f"{row['ttft_p99']}s | {row['requests_per_second']} |"
+        )
+    return "\n".join(lines)
+
+
+def final_scorecard_table() -> str:
+    """The whole journey in one table, with the workload column that makes it honest.
+
+    Rows are not all comparable, and pretending otherwise would undo the discipline the rest of the
+    book insists on. The first five ran on the same uniform trace at the same rate and can be read
+    against each other directly. The rest exist because a later chapter needed a workload the
+    earlier ones do not have — prefix caching does nothing on a trace with no shared text — so they
+    are listed with their workload and read within it.
+    """
+    rows = [
+        ("ch01", "Naive, recompute everything", "uniform, 16 req/s", "naive-rate16-tier1"),
+        ("ch05", "KV cache", "uniform, 16 req/s", "cached-rate16-tier1"),
+        ("ch06", "Static batching", "uniform, 16 req/s", "static-rate16-tier1"),
+        ("ch07", "Continuous batching", "uniform, 16 req/s", "continuous-rate16-tier1"),
+        ("ch08", "Paged attention", "uniform, 16 req/s", "paged-rate16-tier1"),
+        ("ch08", "Paged attention", "chat, 8 req/s", "paged-chat-rate8-tier1"),
+        ("ch09", "Prefix caching", "chat, 8 req/s", "prefix-chat-rate8-tier1"),
+        ("ch10", "Chunked prefill", "mixed lengths, 8 req/s", "chunked-budget512-tier1"),
+        ("ch11", "Disaggregated pools", "uniform, 16 req/s", "disagg-rate16-tier1"),
+        (
+            "ch18",
+            "Fleet, prefix-affinity routing",
+            "multi-tenant, 8 req/s",
+            "router-prefix-affinity-tier1",
+        ),
+        ("ch19", "Fair queueing", "noisy neighbour, 4 req/s", "tenants-fair-tier1"),
+    ]
+    lines = [
+        "| Chapter | Engine | Workload | Output tok/s | TTFT p95 | Goodput req/s |",
+        "|---|---|---|---|---|---|",
+    ]
+    for chapter, engine, workload, name in rows:
+        s = load(name)["summary"]
+        lines.append(
+            f"| {chapter} | {engine} | {workload} | {s['output_tokens_per_second']} | "
+            f"{s['ttft_p95']}s | {s['goodput_per_second']} |"
+        )
+    return "\n".join(lines)
+
+
+def tensor_parallel_table() -> str:
+    """What the collectives cost per token, in each phase, on each interconnect.
+
+    Arithmetic, and deliberately so: this book's tier has one device, and a simulated all-reduce on
+    one device would measure a memory copy rather than a network. The quantity that decides whether
+    tensor parallelism is viable is exactly computable from the model's shape and the link's two
+    numbers, and it is more useful than a measurement on the wrong hardware would be.
+    """
+    from llmserve.config import ModelConfig
+    from llmserve.parallel import all_reduce_time_seconds
+
+    model = ModelConfig(
+        vocab_size=128_256, n_layers=32, n_heads=32, n_kv_heads=8, head_dim=128, dtype="fp16"
+    )
+    links = [
+        ("NVLink", 4.0e11, 5e-6),
+        ("PCIe 4.0 x16", 3.2e10, 1.5e-5),
+        ("100 GbE", 1.25e10, 5e-5),
+    ]
+    lines = [
+        "| Interconnect | Shards | Decode, per token | Prefill, 2k prompt |",
+        "|---|---|---|---|",
+    ]
+    for label, bandwidth, latency in links:
+        for shards in (2, 8):
+            decode = all_reduce_time_seconds(
+                model,
+                shards,
+                tokens=1,
+                bandwidth_bytes_per_second=bandwidth,
+                latency_seconds=latency,
+            )
+            prefill = all_reduce_time_seconds(
+                model,
+                shards,
+                tokens=2048,
+                bandwidth_bytes_per_second=bandwidth,
+                latency_seconds=latency,
+            )
+            lines.append(
+                f"| {label} | {shards} | {decode * 1000:.2f} ms | {prefill * 1000:.0f} ms |"
+            )
+    lines.append("")
+    lines.append(
+        ": 8B model, 32 layers, fp16. Decode all-reduces one vector per layer and is bound by the "
+        "*fixed* cost of each collective, so it does not improve with fewer shards. Prefill's "
+        "payload scales with the prompt and is bound by bandwidth."
+    )
+    return "\n".join(lines)
+
+
+def pipeline_bubble_table() -> str:
+    """Idle device time in a pipeline, from the schedule alone."""
+    from llmserve.parallel import pipeline_bubble_fraction
+
+    microbatches = (1, 2, 4, 8, 16, 32)
+    lines = [
+        "| Stages | "
+        + " | ".join(f"{m} microbatch{'es' if m > 1 else ''}" for m in microbatches)
+        + " |",
+        "|---" * (len(microbatches) + 1) + "|",
+    ]
+    for stages in (2, 4, 8):
+        cells = " | ".join(f"{pipeline_bubble_fraction(stages, m):.0%}" for m in microbatches)
+        lines.append(f"| {stages} | {cells} |")
+    lines.append("")
+    lines.append(
+        ": The fraction of device time spent idle while the pipeline fills and drains. Serving sits "
+        "at the left of this table, because a decode step produces one token per sequence and there "
+        "is little to split into microbatches."
+    )
+    return "\n".join(lines)
+
+
+def gather_cost_table() -> str:
+    """What chapter 8's decode gather costs, in the only unit that matters: the decode ceiling.
+
+    Arithmetic over the cache layout and one bandwidth figure, which is exactly the right tool. The
+    quantity is a property of the shapes, and measuring it on this book's tiny model would report
+    the overhead of Python rather than the cost of the copy.
+    """
+    from llmserve.config import ModelConfig
+    from llmserve.kernels import gather_bytes_per_step, in_place_bytes_per_step
+
+    model = ModelConfig(
+        vocab_size=128_256, n_layers=32, n_heads=32, n_kv_heads=8, head_dim=128, dtype="fp16"
+    )
+    bandwidth = 3.35e12  # HBM3, an H100-class figure
+    # Combinations that actually fit an 80 GB device once the weights are resident. A row whose
+    # KV cache exceeds the hardware is not a stronger argument, it is a wrong one.
+    cases = [(8, 2048), (32, 2048), (32, 8192), (8, 32768)]
+    lines = [
+        "| Batch | Context | KV cache | Gather ms/step | In place ms/step | Decode ceiling, tok/s |",
+        "|---|---|---|---|---|---|",
+    ]
+    for batch, context in cases:
+        gathered = gather_bytes_per_step(model, context, batch)
+        in_place = in_place_bytes_per_step(model, context, batch)
+        slow, fast = gathered / bandwidth, in_place / bandwidth
+        lines.append(
+            f"| {batch} | {context:,} | {in_place / 1e9:.1f} GB | {slow * 1000:.1f} | "
+            f"{fast * 1000:.1f} | {batch / slow:,.0f} → {batch / fast:,.0f} |"
+        )
+    lines.append("")
+    lines.append(
+        ": 8B model, 32 layers, GQA with 8 KV heads, fp16, at 3.35 TB/s of memory bandwidth. One "
+        "decode step produces one token per sequence, so every byte here is moved to generate a "
+        "handful of tokens — and the gather moves the cache twice, once to collect it and once for "
+        "the model to append to it."
+    )
     return "\n".join(lines)

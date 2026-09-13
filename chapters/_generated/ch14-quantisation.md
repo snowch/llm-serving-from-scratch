@@ -2,7 +2,7 @@
 
 | Scheme | Perplexity | Change | Linear weights | Decode tok/s |
 |---|---|---|---|---|
-| fp32 (baseline) | 1.8321 | baseline | 23.07 MB | 234.1 |
-| INT8 per-tensor (naive) | 1.8323 | +0.01% | 5.77 MB (4.0x smaller) | 170.1 |
-| INT8 per-channel | 1.8322 | +0.01% | 5.84 MB (4.0x smaller) | 166.3 |
-| INT4 grouped (g=64) | 1.8372 | +0.28% | 3.24 MB (7.1x smaller) | 154.8 |
+| fp32 (baseline) | 1.8321 | baseline | 23.07 MB | 243.5 |
+| INT8 per-tensor (naive) | 1.8323 | +0.01% | 5.77 MB (4.0x smaller) | 167.9 |
+| INT8 per-channel | 1.8322 | +0.01% | 5.84 MB (4.0x smaller) | 172.1 |
+| INT4 grouped (g=64) | 1.8372 | +0.28% | 3.24 MB (7.1x smaller) | 149.0 |

@@ -4,18 +4,111 @@ short_title: "Appendix E"
 ---
 
 (appendix-e)=
-# Appendix E · Reading List [DRAFT]
+# Appendix E · Reading List
 
-[To write: Reading List.]
+The primary sources, grouped by the chapter that uses them. Full bibliographic entries are in
+`references.bib`.
 
-## Planned contents
+This is a short list on purpose. Serving is a fast-moving field with a very large literature and a
+fairly small number of load-bearing ideas, and almost every paper below is one of those ideas rather
+than an incremental improvement on one. If you read six of them you will understand most production
+engines.
 
-- **Scheduling & batching:** Orca (iteration-level scheduling), Sarathi-Serve (chunked prefill)
-- **Memory:** vLLM / PagedAttention, SGLang / RadixAttention
-- **Attention:** FlashAttention 1–3, Multi-Query Attention, GQA, DeepSeek MLA
-- **Disaggregation:** DistServe, Splitwise
-- **Speculation:** Leviathan et al., Chen et al., Medusa, EAGLE
-- **Quantisation:** LLM.int8(), SmoothQuant, GPTQ, AWQ, FP8 formats
-- **Multi-tenancy:** S-LoRA, Punica
-- **Structured output:** Outlines, XGrammar
-- Grouped by the chapter that cites them, so the list doubles as a per-chapter bibliography.
+**A note on reading them.** Serving papers report speedups, and a speedup is a claim about a
+workload, a baseline and a service objective. Before believing a number, find those three. Several
+famous figures are true and describe a situation you are not in.
+
+## Start here
+
+If you read only three:
+
+- **Orca** (Yu et al., OSDI 2022) — iteration-level scheduling. The idea behind every modern engine's
+  main loop, and the largest single improvement in this book ({ref}`ch07`).
+- **PagedAttention / vLLM** (Kwon et al., SOSP 2023) — KV cache as paged memory. Explains why the
+  memory management in {ref}`ch08` looks like an operating system's.
+- **DistServe** (Zhong et al., 2024) — prefill/decode disaggregation, and the clearest statement of
+  *goodput* as the metric that matters ({ref}`ch02`, {ref}`ch11`).
+
+## Scheduling and batching
+
+- **Orca** (Yu et al., OSDI 2022). Iteration-level scheduling. ({ref}`ch07`)
+- **Sarathi-Serve** (Agrawal et al., 2024). Chunked prefill and stall-free batching — the source of
+  {ref}`ch10`'s token budget, and honest about the throughput it costs.
+
+## Memory
+
+- **PagedAttention / vLLM** (Kwon et al., SOSP 2023). Blocks, block tables, copy-on-write sharing.
+  ({ref}`ch08`)
+- **SGLang / RadixAttention** (Zheng et al., 2024). Automatic prefix reuse via a radix tree, plus a
+  router that knows about it — which is {ref}`ch09` and {ref}`ch18` as one system.
+
+## Attention
+
+- **Multi-Query Attention** (Shazeer, 2019). Four pages, and the origin of the observation the whole
+  field now runs on: decode is bottlenecked by the KV cache, not by the arithmetic. ({ref}`ch12`)
+- **GQA** (Ainslie et al., 2023). The interpolation between MHA and MQA that everything now uses,
+  and the recipe for converting an existing checkpoint. ({ref}`ch12`)
+- **FlashAttention** (Dao et al., NeurIPS 2022) and **FlashAttention-2** (Dao, 2023). IO-awareness:
+  more arithmetic, less memory traffic, much faster. Read the first for the idea and the second for
+  what it takes to actually saturate the hardware. ({ref}`ch12`)
+
+## Disaggregation
+
+- **DistServe** (Zhong et al., 2024) and **Splitwise** (Patel et al., ISCA 2024). The same idea from
+  two directions; Splitwise is more explicit about the hardware heterogeneity that makes it pay.
+  ({ref}`ch11`)
+
+## Quantisation
+
+- **LLM.int8()** (Dettmers et al., NeurIPS 2022). The outlier-channel problem, which is the reason
+  per-channel scaling exists and {ref}`ch14` measures directly.
+- **SmoothQuant** (Xiao et al., ICML 2023). Migrating activation outliers into the weights, where
+  they are easier to quantise.
+- **GPTQ** (Frantar et al., 2023) and **AWQ** (Lin et al., MLSys 2024). The two post-training methods
+  you will actually meet in a model card. ({ref}`ch14`)
+
+## Speculation
+
+- **Leviathan et al.** (ICML 2023) and **Chen et al.** (2023). Two independent derivations of the
+  same acceptance rule. Read one of them for the proof that it preserves the target distribution —
+  it is the part implementations get wrong, and {ref}`ch15` measures what happens when they do.
+- **Medusa** (Cai et al., 2024) and **EAGLE** (Li et al., 2024). Drafting without a separate draft
+  model: extra heads, and feature-level prediction respectively. ({ref}`ch15`)
+
+## Structured output
+
+- **Outlines** (Willard and Louf, 2023). Guided generation as FSM-indexed logit masking, and the
+  token-lifting problem this book's byte-level tokenizer lets it skip. ({ref}`ch16`)
+- **XGrammar** (Dong et al., 2024). The same problem attacked with a much faster precomputation.
+
+## Parallelism
+
+- **Megatron-LM** (Shoeybi et al., 2019). The tensor-parallel layer split, written for training and
+  used unchanged for serving. ({ref}`ch17`)
+
+## Multi-tenancy
+
+- **LoRA** (Hu et al., 2021). Worth reading for the ablation over which projections to adapt — the
+  convention of adapting queries and values is an empirical result, not a default someone picked.
+  ({ref}`ch19`)
+- **S-LoRA** (Sheng et al., 2024) and **Punica** (Chen et al., MLSys 2024). Serving many adapters
+  concurrently. Both are largely about replacing {ref}`ch19`'s naive per-adapter loop with a batched
+  kernel, and {ref}`ch19` measures the gap they are closing.
+- **Deficit Round-Robin** (Shreedhar and Varghese, 1996). Thirty years old, from packet scheduling,
+  and still the clearest treatment of the fairness problem {ref}`ch19` runs into.
+
+## Measurement
+
+- **"How NOT to Measure Latency"** (Tene, 2015). A conference talk, not a paper, and the best
+  explanation of coordinated omission there is. {ref}`ch02`'s harness design is downstream of it,
+  and {ref}`ch28` measures what it warns about.
+
+## Reading the engines themselves
+
+At some point the source is better than any paper. All three are readable, and {ref}`ch29` maps this
+book's chapters onto each of them:
+
+- **vLLM** — the most widely deployed, and the closest in structure to this book's engine.
+- **SGLang** — the place to look for prefix caching and structured output done seriously.
+- **TensorRT-LLM** — the least like this book and the most instructive for it: a compiler-oriented
+  design where much of what is runtime scheduling here is a build-time decision there.

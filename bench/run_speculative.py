@@ -15,11 +15,10 @@ from __future__ import annotations
 import argparse
 import json
 from dataclasses import asdict
-from datetime import UTC, datetime
 
 import torch
 
-from bench.harness import RESULTS_DIR, _hardware, _versions
+from bench.harness import RESULTS_DIR, stamped_payload
 from bench.train_tiny import make_corpus, train_reference_model
 from llmserve.config import REFERENCE_MODEL
 from llmserve.sampling import SamplingParams
@@ -157,25 +156,22 @@ def main() -> None:
         f"({distribution['biased_rule_sigma']} SE)"
     )
 
-    payload = {
-        "engine": "speculative",
-        "generated_at": datetime.now(UTC).isoformat(timespec="seconds"),
-        "hardware": _hardware(),
-        "model": {
+    payload = stamped_payload(
+        engine="speculative",
+        model={
             "name": "TinyGPT (reference, random weights)",
             "params": sum(p.numel() for p in model.parameters()),
             **asdict(REFERENCE_MODEL),
         },
-        "versions": _versions(),
-        "code_fingerprint": "n/a-speculative",
-        "engine_module": None,
-        "conditions": {
+        # The acceptance sweep runs on a trained model, so the corpus is part of the measurement.
+        code_sources=["llmserve/speculative.py", "bench/train_tiny.py"],
+        conditions={
             "trace": "acceptance on the trained model; distribution test on the untrained one",
             "drafter": "ngram(3)",
             "held_out_perplexity": round(perplexity, 4),
         },
-        "summary": {"sweep": sweep, "distribution": distribution},
-    }
+        summary={"sweep": sweep, "distribution": distribution},
+    )
     (RESULTS_DIR / "speculative-tier1.json").write_text(json.dumps(payload, indent=2) + "\n")
     print("wrote bench/results/speculative-tier1.json")
 

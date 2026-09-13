@@ -8,13 +8,11 @@ serving. The model is otherwise identical in every run, so the difference is att
 from __future__ import annotations
 
 import argparse
-import json
 from dataclasses import asdict, replace
-from datetime import UTC, datetime
 
 import torch
 
-from bench.harness import RESULTS_DIR, SLO, _hardware, _versions, make_poisson_trace, run_benchmark
+from bench.harness import RESULTS_DIR, SLO, make_poisson_trace, run_benchmark
 from llmserve.arithmetic import kv_bytes_per_token
 from llmserve.config import REFERENCE_MODEL
 from llmserve.engines.batched import ContinuousBatchEngine
@@ -73,26 +71,6 @@ def main() -> None:
             f"params={model_meta['params']:>9,}  tok/s={s['output_tokens_per_second']:<7} "
             f"goodput={s['goodput_per_second']}"
         )
-
-    # A separate arithmetic-only file: what the same choice costs on a production-scale model.
-    path = RESULTS_DIR / "attn-footprint-tier1.json"
-    path.write_text(
-        json.dumps(
-            {
-                "engine": "arithmetic",
-                "generated_at": datetime.now(UTC).isoformat(timespec="seconds"),
-                "hardware": _hardware(),
-                "model": {"name": "TinyGPT variants", "params": footprint[0]["params"]},
-                "versions": _versions(),
-                "code_fingerprint": "n/a-arithmetic",
-                "engine_module": None,
-                "conditions": {"trace": "arithmetic only, no serving"},
-                "summary": {"variants": footprint},
-            },
-            indent=2,
-        )
-        + "\n"
-    )
 
 
 if __name__ == "__main__":

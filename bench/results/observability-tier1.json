@@ -1,0 +1,168 @@
+{
+  "engine": "observability",
+  "generated_at": "2026-09-13T19:12:07+00:00",
+  "hardware": {
+    "platform": "Linux-6.18.44-fc-v24-x86_64-with-glibc2.39",
+    "machine": "x86_64",
+    "processor": "x86_64",
+    "cpu_count": 4,
+    "device": "cpu"
+  },
+  "model": {
+    "name": "TinyGPT (reference, random weights)",
+    "params": 5838080,
+    "vocab_size": 260,
+    "n_layers": 6,
+    "n_heads": 8,
+    "n_kv_heads": 2,
+    "head_dim": 32,
+    "ffn_mult": 4,
+    "max_seq_len": 2048,
+    "rope_theta": 10000.0,
+    "norm_eps": 1e-05,
+    "dtype": "fp32",
+    "seed": 0
+  },
+  "versions": {
+    "python": "3.11.15",
+    "torch": "2.14.0+cu130",
+    "numpy": "2.4.6"
+  },
+  "code_fingerprint": "743e2e2691645501",
+  "code_sources": [
+    "llmserve/metrics.py",
+    "llmserve/engines/prefix.py"
+  ],
+  "conditions": {
+    "trace": "48 requests at 24.0/s, deliberately beyond capacity",
+    "rate_per_second": 24.0,
+    "window_steps": 25
+  },
+  "summary": {
+    "report": {
+      "steps": 288,
+      "ttft_p50": 2.5,
+      "ttft_p95": 5.0,
+      "itl_p95": null,
+      "batch_size_p50": 8,
+      "peak_queue_depth": 34,
+      "peak_kv_utilisation": 0.2402,
+      "preemptions": 0
+    },
+    "windows": [
+      {
+        "step": 1,
+        "mean_queue_depth": 2.32,
+        "peak_queue_depth": 9,
+        "mean_running": 5.8,
+        "kv_utilisation": 0.041,
+        "tokens_out": 145,
+        "ttft_p95": 0.0363
+      },
+      {
+        "step": 26,
+        "mean_queue_depth": 15.0,
+        "peak_queue_depth": 25,
+        "mean_running": 8.0,
+        "kv_utilisation": 0.0664,
+        "tokens_out": 200,
+        "ttft_p95": 0.035
+      },
+      {
+        "step": 51,
+        "mean_queue_depth": 30.44,
+        "peak_queue_depth": 34,
+        "mean_running": 8.0,
+        "kv_utilisation": 0.0957,
+        "tokens_out": 200,
+        "ttft_p95": 0.7724
+      },
+      {
+        "step": 76,
+        "mean_queue_depth": 30.32,
+        "peak_queue_depth": 32,
+        "mean_running": 8.0,
+        "kv_utilisation": 0.1152,
+        "tokens_out": 200,
+        "ttft_p95": 1.3581
+      },
+      {
+        "step": 101,
+        "mean_queue_depth": 24.76,
+        "peak_queue_depth": 28,
+        "mean_running": 8.0,
+        "kv_utilisation": 0.1387,
+        "tokens_out": 200,
+        "ttft_p95": 1.6753
+      },
+      {
+        "step": 126,
+        "mean_queue_depth": 21.04,
+        "peak_queue_depth": 22,
+        "mean_running": 8.0,
+        "kv_utilisation": 0.1621,
+        "tokens_out": 200,
+        "ttft_p95": 1.98
+      },
+      {
+        "step": 151,
+        "mean_queue_depth": 15.52,
+        "peak_queue_depth": 18,
+        "mean_running": 8.0,
+        "kv_utilisation": 0.1816,
+        "tokens_out": 200,
+        "ttft_p95": 2.6351
+      },
+      {
+        "step": 176,
+        "mean_queue_depth": 10.2,
+        "peak_queue_depth": 13,
+        "mean_running": 8.0,
+        "kv_utilisation": 0.2051,
+        "tokens_out": 200,
+        "ttft_p95": 2.8079
+      },
+      {
+        "step": 201,
+        "mean_queue_depth": 5.36,
+        "peak_queue_depth": 9,
+        "mean_running": 8.0,
+        "kv_utilisation": 0.2246,
+        "tokens_out": 200,
+        "ttft_p95": 3.2745
+      },
+      {
+        "step": 226,
+        "mean_queue_depth": 1.04,
+        "peak_queue_depth": 3,
+        "mean_running": 7.36,
+        "kv_utilisation": 0.2402,
+        "tokens_out": 184,
+        "ttft_p95": 3.7265
+      },
+      {
+        "step": 251,
+        "mean_queue_depth": 0.0,
+        "peak_queue_depth": 0,
+        "mean_running": 3.04,
+        "kv_utilisation": 0.2344,
+        "tokens_out": 76,
+        "ttft_p95": 3.9202
+      },
+      {
+        "step": 276,
+        "mean_queue_depth": 0.0,
+        "peak_queue_depth": 0,
+        "mean_running": 0.92,
+        "kv_utilisation": 0.2324,
+        "tokens_out": 12,
+        "ttft_p95": 4.3801
+      }
+    ],
+    "overhead": {
+      "instrumented_wall": 6.414,
+      "bare_wall": 6.086,
+      "overhead_fraction": 0.0539
+    }
+  }
+}

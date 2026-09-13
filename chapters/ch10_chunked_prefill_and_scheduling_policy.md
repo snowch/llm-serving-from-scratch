@@ -107,30 +107,34 @@ do the same arithmetic with far better locality.
 
 So chunking is not merely a scheduling tool. It is also, at this size, a faster way to prefill.
 
-Which makes the serving result harder to explain away:
+Now the serving result, which is not a straight line:
 
 ```{include} _generated/ch10-token-budget.md
 ```
 
-On this trace, chunking loses on every axis. Goodput falls as the budget shrinks. Median ITL
-rises. TTFT gets worse, not better.
+**The budget is a dial with an interior optimum, not a direction.** A moderate budget beats no
+chunking on every axis in that table — better TTFT at both percentiles, lower median ITL, more
+throughput and more goodput. An aggressive budget is worse than not chunking at all, on every axis.
 
-The trace is why: 35% of these requests carry a 1536-token prompt, so a prefill is almost always
-in flight. There is no quiet time to spread the work into, so every step carries a chunk, every
-token pays, and the long requests — a third of the workload — wait many steps for their first
-token. The mechanism works exactly as designed and the design does not suit the workload.
+Both halves have the same cause, and it is the microbenchmark above. Splitting a prefill into a few
+passes is *faster* than doing it in one, so a moderate budget is getting the locality win and the
+scheduling win together. Splitting it into very many passes throws that away: each step's chunk is
+too small to amortise the per-step overhead, and a long request now waits many steps for its first
+token. The mechanism is the same at both settings; what changes is whether the chunk is large enough
+to be worth a pass.
 
-This is worth sitting with, because it is the first chapter where the technique everyone
-recommends does not help. The honest conclusion is not "chunked prefill is bad". It is:
+That gives the honest statement of what chunking is:
 
-> **Chunked prefill is a redistribution, not a saving.** It moves latency from streaming users to
-> arriving ones. That is a good trade when prefills are occasional and a bad one when they are
-> constant.
+> **Chunked prefill is a redistribution, not a saving** — plus, at the right chunk size, a locality
+> win that happens to come with it. It moves latency from streaming users to arriving ones, and how
+> much it moves depends on a budget that has a wrong answer in both directions.
 
-At production scale the usual case is the first: prompts of a few thousand tokens arriving into a
-pool serving hundreds of concurrent conversations, where a single unchunked prefill would stall
-every one of them for hundreds of milliseconds. Our trace is deliberately the other case, and it
-shows what happens when the assumption behind a technique does not hold.
+The practical consequence is that a token budget has to be *tuned*, on the workload, and that the
+default in any engine is a guess about a length distribution. Our trace is deliberately harsh —
+35% of requests carry a 1536-token prompt, so a prefill is almost always in flight and there is
+little quiet time to spread work into — and even here a moderate budget wins. On a workload with
+occasional long prompts among many short ones, the margin is larger; {ref}`ch21` measures it on
+retrieval traffic, where the prompts are long and the arrival rate decides the answer.
 
 ## The cost
 
@@ -147,10 +151,11 @@ shows what happens when the assumption behind a technique does not hold.
 - A token budget per step stops one long prefill from monopolising the engine, and makes the
   prefill/decode trade explicit rather than accidental.
 - Decode before prefill: those tokens have someone waiting on them.
-- Chunking redistributes latency rather than removing it — better worst case, worse typical case,
-  and much worse TTFT for the request being chunked.
-- It only pays when prefills are occasional enough that there is quiet time to spread them into.
-  Measure your own trace; do not assume.
+- Chunking redistributes latency rather than removing it, and the budget has a wrong answer in
+  both directions: a moderate one beat no chunking on every axis here, an aggressive one lost on
+  every axis.
+- A token budget must be tuned on the workload. Any engine's default is a guess about a length
+  distribution, and it may not be yours.
 - Splitting a long prefill can be *faster* than doing it in one pass, because a single enormous
   attention matrix has terrible locality.
 - Represent scheduler state explicitly. Both bugs in this chapter came from inferring "is this

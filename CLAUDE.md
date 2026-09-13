@@ -39,10 +39,14 @@ These are what the book's credibility rests on. Do not work around them.
   way; render figures to a fragment instead.
 - **Unpinned `mystmd`.** Always install the version from `package.json`.
 - **Editing `bench/harness.py` or `llmserve/{model,sampling,request,config}.py` casually.** Every
-  committed result records a content hash of those files plus the engine module that produced it,
-  so a change invalidates all of them and `verify-numbers.py` fails until they are regenerated
-  (`python -m bench.run_v01`, `run_chat`, `run_chunked`, `run_disagg`, then
-  `scripts/render-scorecards.py`). Changing one engine module invalidates only its own results.
+  committed result records a content hash of those files plus everything the engine that produced it
+  is built from — its own module, its base classes, and any engine it wraps — so a change invalidates
+  all of them and `verify-numbers.py` fails until every runner is re-run and
+  `scripts/render-scorecards.py` is re-run after it. That is 20 runners and roughly 40 minutes.
+  Changing one engine module invalidates only the results whose engines inherit from or wrap it.
+- **A runner whose defaults do not produce what the book cites.** `verify-numbers.py` stamps *every*
+  file in `bench/results/`, not just the cited ones, because a default that drifted once left the
+  cited files behind on every regeneration and nothing noticed.
 - **Bare `pytest`.** Use `python3 -m pytest`, so tests run under the interpreter that has the
   project's dependencies; a standalone pytest has its own isolated environment.
 - **`BASE_URL`.** This is a *project* site at `/llm-serving-from-scratch/`. The deploy workflow
@@ -56,7 +60,9 @@ match `.pre-commit-config.yaml`.
 
 ## Chapter status
 
-Chapters 1-11 (Parts I-III) are written, with measured figures. The remaining 18 chapters and all
-5 appendices are stubs carrying the template and per-chapter guidance; `[DRAFT]` in a title means
-outline only. See PLAN.md §11 for what ships in which release, and
-CHECKPOINTS.md for the tag scheme.
+All 29 chapters and all 5 appendices are written, with measured figures. Two chapters are explicit
+about hardware the default tier does not have: ch13 contains the paged-decode algorithm, its tests
+and its arithmetic but no Triton kernel (a kernel cannot be verified without a GPU, and shipping an
+unverified one would contradict the book's own standard), and ch17 proves the tensor-parallel split
+correct on one device and computes the collective cost rather than timing it. Both say so in a
+warning box. See PLAN.md §11 for release scoping and CHECKPOINTS.md for the tag scheme.

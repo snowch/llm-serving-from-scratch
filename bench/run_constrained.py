@@ -11,11 +11,10 @@ import argparse
 import json
 import time
 from dataclasses import asdict
-from datetime import UTC, datetime
 
 import torch
 
-from bench.harness import RESULTS_DIR, _hardware, _versions
+from bench.harness import RESULTS_DIR, stamped_payload
 from bench.train_tiny import train_reference_model
 from llmserve.config import REFERENCE_MODEL
 from llmserve.constrain import JSONGrammar, State, is_valid_json_object
@@ -124,23 +123,19 @@ def main() -> None:
         }
         print(f"{label:<20} {elapsed:.3f}s, masks built: {grammar.masks_built}")
 
-    payload = {
-        "engine": "constrained",
-        "generated_at": datetime.now(UTC).isoformat(timespec="seconds"),
-        "hardware": _hardware(),
-        "model": {
+    payload = stamped_payload(
+        engine="constrained",
+        model={
             "name": "TinyGPT, trained on the synthetic corpus",
             "params": sum(p.numel() for p in model.parameters()),
             **asdict(REFERENCE_MODEL),
         },
-        "versions": _versions(),
-        "code_fingerprint": "n/a-constrained",
-        "engine_module": None,
-        "conditions": {
+        code_sources=["llmserve/constrain.py", "bench/train_tiny.py"],
+        conditions={
             "trace": f"{args.trials} samples of up to {args.tokens} tokens, temperature 1.0",
             "grammar": "JSON object subset over bytes",
         },
-        "summary": {
+        summary={
             "validity": {
                 "trials": args.trials,
                 "unconstrained_valid": free_valid,
@@ -150,7 +145,7 @@ def main() -> None:
             "mask_cost": _mask_cost(),
             "cost": timings,
         },
-    }
+    )
     (RESULTS_DIR / "constrained-tier1.json").write_text(json.dumps(payload, indent=2) + "\n")
     print("wrote bench/results/constrained-tier1.json")
 

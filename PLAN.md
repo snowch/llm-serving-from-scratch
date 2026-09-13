@@ -538,6 +538,25 @@ books each get their own landing page and TOC entry.
 The book should be *linkable and useful* long before it is finished — the site already marks
 in-progress work `[DRAFT]`, so shipping incrementally is consistent with existing practice.
 
+**Status: all 29 chapters and all 5 appendices are written**, so the releases below are now a record
+of the order things were built in rather than a plan. Two things promised here were not delivered as
+promised, and both are stated in the chapters themselves rather than quietly dropped:
+
+- **ch13 contains no Triton kernel.** It contains the paged-decode algorithm in PyTorch, verified
+  against the ch12 reference on every boundary case, the arithmetic that says the ch08 gather halves
+  the decode ceiling, and a precise account of the Triton translation. A kernel cannot be compiled or
+  run without a GPU, and shipping an unverified kernel would contradict §6.3 — the whole point of
+  which is that unverified performance claims are worthless.
+- **ch28 contains no framework comparison.** It contains the methodology, the coordinated-omission
+  demonstration, and an engine-agnostic harness that measures anything implementing three methods.
+  A fair run against vLLM, SGLang, TGI and TensorRT-LLM requires each of them tuned on the same GPU;
+  run here it would compare four engines' CPU fallback paths, which measures nothing.
+
+ch17 is delivered in a third form: the tensor-parallel split is built and proved *exactly correct* on
+one device, and the collective cost is computed from the model's shape and the link's bandwidth and
+latency rather than timed. That is a stronger result than a timing on the wrong hardware, and the
+chapter says which half is which.
+
 | Release | Contents | Why this is the cut |
 |---|---|---|
 | **v0.1 — Foundations** ✅ | Repo scaffolding, CI, Pages deploy · index/preface · ch01–ch03 written with measured figures · `bench/` harness · `llmserve` model/tokenizer/sampling/engines · 42 tests | Establishes the baseline *and* the scorecard. Nothing later can be written credibly without the harness. |
@@ -546,7 +565,7 @@ in-progress work `[DRAFT]`, so shipping incrementally is consistent with existin
 | **v0.4 — Cheaper Math** | ch12, ch14, ch15 · quantisation + speculation · GPU-tier results published | First release with meaningful GPU numbers; needs the Tier 2 machine. |
 | **v0.5 — API and Operations** | ch24–ch26 · OpenAI-compatible server, observability, reliability | Pulled forward ahead of Parts V–VI: a reader with the engine plus an API plus a dashboard can actually deploy something. Highest practical value per page. |
 | **v0.6 — Scale and Patterns** | ch11, ch13, ch16–ch23 · disaggregation, Triton, constrained decoding, multi-GPU, workload patterns | The advanced and specialist material, once the core arc is solid. |
-| **v1.0 — Complete** | ch27–ch29 · appendices A–E · framework comparison · full scorecard · PDF export if it earns its keep | Costing, honest benchmarking, and the capstone retrospective land last because they summarise everything before them. |
+| **v1.0 — Complete** | ch27–ch29 · appendices A–E · full scorecard · PDF export if it earns its keep | Costing, honest benchmarking, and the capstone retrospective land last because they summarise everything before them. The framework comparison moved to a reader exercise; see the status note above. |
 
 **Rationale for the ordering:** Parts are written in dependency order except that Part VII's
 API/observability chapters are pulled ahead of Parts V–VI. That is deliberate — an engine with
@@ -644,6 +663,15 @@ Two smaller ones remain, and neither blocks authoring:
    if it is wrong, and it is far easier to verify now than after 29 chapters.
 3. Make the four `snowch.github.io` edits in [§10](#10-linking-from-snowchgithubio) so the link
    exists from day one, with the landing page marked *in progress*.
-4. Build `bench/harness.py`, then ch01–ch03, as v0.1. **Do not write an optimisation chapter
-   before the harness exists** — without it the book's central promise cannot be kept.
-5. Revisit the three `llmfs-scaling` lessons per decision 3 once ch12/ch14 exist to link to.
+4. ~~Build `bench/harness.py`, then ch01–ch03, as v0.1.~~ **Done**, and then everything after it.
+   All 29 chapters and 5 appendices are written; `./scripts/ci-check.sh` is clean, 229 tests pass,
+   and every figure traces to a stamped result in `bench/results/`.
+5. Revisit the three `llmfs-scaling` lessons per decision 3 now that ch12/ch14 exist to link to.
+6. **On Tier 2/3 hardware**, in priority order: write ch13's Triton kernel against the reference and
+   tests already in the repo; time ch17's tensor-parallel split rather than computing it; and run
+   ch28's methodology against vLLM, SGLang, TGI and TensorRT-LLM. Each of the three has its
+   specification, its harness and its verification suite committed; what is missing is only the
+   hardware.
+7. Re-measure Parts II–III on a GPU. Every committed figure is CPU-only, and while the *shape* of
+   each result is structural, the magnitudes are not — a GPU-tier column beside the Tier 1 one would
+   make the book considerably more useful and would cost a few hours of compute.

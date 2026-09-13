@@ -118,3 +118,98 @@ def test_fingerprint_changes_when_a_core_source_changes(tmp_path):
     assert "llmserve/sampling.py" in CORE_SOURCES
     baseline = code_fingerprint()
     assert code_fingerprint("llmserve/engines/naive.py") != baseline
+
+
+def test_fingerprint_accepts_several_sources():
+    """A composed engine — a router over replicas — depends on more than one module."""
+    from bench.harness import code_fingerprint
+
+    pair = ["llmserve/engines/prefix.py", "llmserve/router.py"]
+    assert code_fingerprint(pair) != code_fingerprint(pair[:1])
+    assert code_fingerprint(pair) != code_fingerprint()
+    # One path may be given as a bare string.
+    assert code_fingerprint("llmserve/router.py") == code_fingerprint(["llmserve/router.py"])
+    # The hash is over an ordered list, so discovery order would change it. That is why
+    # engine_sources sorts rather than relying on the order replicas happen to be visited in.
+    assert code_fingerprint(pair) != code_fingerprint(list(reversed(pair)))
+
+
+def test_engine_sources_are_sorted_and_include_wrapped_engines():
+    """A change to the replica engine must invalidate a fleet result measured with it."""
+    from bench.harness import engine_sources
+
+    class FakeReplica:
+        pass
+
+    class FakeFleet:
+        inner_engines = [FakeReplica(), FakeReplica()]
+
+    sources = engine_sources(FakeFleet())
+    assert list(sources) == sorted(sources)
+    # Both classes live in this test module, so the single path appears exactly once.
+    assert len(sources) == 1
+
+
+def test_every_committed_result_carries_a_real_fingerprint():
+    """Regression: four results shipped with a placeholder like ``n/a-quantisation``.
+
+    Those were the runners that do not serve a trace — arithmetic tables and microbenchmarks — and
+    because nothing cited them from ``SCORECARDS`` they escaped verify-numbers entirely. A
+    quantisation figure could have been measured by code that no longer existed, and the build
+    would have stayed green.
+    """
+    import json
+
+    results = sorted((ROOT / "bench" / "results").glob("*.json"))
+    assert results, "no committed results to check"
+    for path in results:
+        payload = json.loads(path.read_text())
+        recorded = payload.get("code_fingerprint")
+        assert recorded, f"{path.name} has no code_fingerprint"
+        assert not str(recorded).startswith("n/a"), (
+            f"{path.name} carries a placeholder fingerprint, so nothing can detect it going stale"
+        )
+
+
+def test_every_derived_fragment_declares_its_results():
+    """A derived fragment that reads a result must say so, or the result goes unverified."""
+    import re
+
+    from bench.scorecards import DERIVED_SOURCES
+
+    source = (ROOT / "scripts" / "render-scorecards.py").read_text()
+    derived_block = source[source.index("DERIVED = {") : source.index("def render(")]
+    declared = set(re.findall(r'"([^"]+)":', derived_block))
+
+    assert set(DERIVED_SOURCES) <= declared, (
+        f"DERIVED_SOURCES names fragments the renderer does not build: "
+        f"{sorted(set(DERIVED_SOURCES) - declared)}"
+    )
+
+    # Every derived renderer that calls load() must appear in DERIVED_SOURCES.
+    scorecard = (ROOT / "bench" / "scorecard.py").read_text()
+    for fragment in sorted(declared):
+        function = _renderer_for(fragment, source)
+        if function and _reads_a_result(function, scorecard):
+            assert fragment in DERIVED_SOURCES, (
+                f"{fragment} is rendered by {function}(), which reads a result file, but it is not "
+                "declared in DERIVED_SOURCES — verify-numbers cannot check that result"
+            )
+
+
+def _renderer_for(fragment: str, render_source: str) -> str | None:
+    """The function name the renderer maps a fragment to."""
+    import re
+
+    match = re.search(rf'"{re.escape(fragment)}":\s*(?:lambda[^,]*?)?(\w+_table)', render_source)
+    return match.group(1) if match else None
+
+
+def _reads_a_result(function: str, scorecard_source: str) -> bool:
+    """Whether a renderer's body calls ``load()``, i.e. depends on a committed result."""
+    start = scorecard_source.find(f"def {function}(")
+    if start < 0:
+        return False
+    end = scorecard_source.find("\ndef ", start + 1)
+    body = scorecard_source[start : end if end > 0 else len(scorecard_source)]
+    return "load(" in body

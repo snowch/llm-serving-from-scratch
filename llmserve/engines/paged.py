@@ -90,6 +90,23 @@ class PagedEngine:
     def has_work(self) -> bool:
         return bool(self.waiting or self.running)
 
+    def _next_waiting(self) -> int:
+        """Index of the queued request to consider admitting next.
+
+        First come, first served, which is right for one caller and wrong for several: chapter 19
+        overrides exactly this method and changes nothing else.
+        """
+        return 0
+
+    def _make_room(self, n: int) -> bool:
+        """Try to free ``n`` blocks so a queued request can be admitted.
+
+        This engine holds nothing it can give up — every block belongs to a live sequence, and
+        evicting one of those to admit another is thrash rather than scheduling. Chapter 9 adds a
+        cache that *can* be given up, and overrides this.
+        """
+        return False
+
     def step(self) -> list[StepOutput]:
         self.running = [s for s in self.running if not s.finished]
 
@@ -99,12 +116,15 @@ class PagedEngine:
         # batch that cannot fit, and prefill then fails on a request the scheduler said yes to.
         reserved = 0
         while self.waiting and len(self.running) + len(admitted) < self.max_batch_size:
-            candidate = self.waiting[0]
+            index = self._next_waiting()
+            candidate = self.waiting[index]
             need = self.cache.allocator.blocks_needed(len(candidate.all_token_ids) + 1)
-            if need > self.cache.allocator.n_free - reserved:
+            if need > self.cache.allocator.n_free - reserved and not self._make_room(
+                need + reserved
+            ):
                 break  # not enough memory; leave it queued rather than thrash
             reserved += need
-            admitted.append(self.waiting.pop(0))
+            admitted.append(self.waiting.pop(index))
 
         outputs: list[StepOutput] = []
         if admitted:

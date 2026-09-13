@@ -1,0 +1,136 @@
+{
+  "engine": "rag",
+  "generated_at": "2026-09-13T19:36:53+00:00",
+  "hardware": {
+    "platform": "Linux-6.18.44-fc-v24-x86_64-with-glibc2.39",
+    "machine": "x86_64",
+    "processor": "x86_64",
+    "cpu_count": 4,
+    "device": "cpu"
+  },
+  "model": {
+    "name": "TinyGPT (reference, random weights)",
+    "params": 5838080,
+    "vocab_size": 260,
+    "n_layers": 6,
+    "n_heads": 8,
+    "n_kv_heads": 2,
+    "head_dim": 32,
+    "ffn_mult": 4,
+    "max_seq_len": 2048,
+    "rope_theta": 10000.0,
+    "norm_eps": 1e-05,
+    "dtype": "fp32",
+    "seed": 0
+  },
+  "versions": {
+    "python": "3.11.15",
+    "torch": "2.14.0+cu130",
+    "numpy": "2.4.6"
+  },
+  "code_fingerprint": "e7e8a969d5c0d3fa",
+  "code_sources": [
+    "llmserve/engines/chunked.py",
+    "llmserve/engines/paged.py"
+  ],
+  "conditions": {
+    "trace": "32 requests: retrieval prompts mixed with short completions",
+    "rates": [
+      2.0,
+      8.0
+    ],
+    "short_prompt_threshold": 300,
+    "slo": {
+      "ttft_seconds": 0.5,
+      "itl_seconds": 0.05
+    }
+  },
+  "summary": {
+    "budgets": [
+      {
+        "rate_per_second": 2.0,
+        "token_budget": 512,
+        "chunked": true,
+        "by_length": {
+          "short": {
+            "requests": 16,
+            "ttft_p50": 0.3853,
+            "ttft_p95": 0.895,
+            "itl_p95": 0.0977
+          },
+          "long": {
+            "requests": 16,
+            "ttft_p50": 0.3117,
+            "ttft_p95": 0.6945,
+            "itl_p95": 0.0855
+          }
+        },
+        "output_tokens_per_second": 86.86,
+        "goodput_per_second": 0.565
+      },
+      {
+        "rate_per_second": 2.0,
+        "token_budget": 8192,
+        "chunked": false,
+        "by_length": {
+          "short": {
+            "requests": 16,
+            "ttft_p50": 0.6339,
+            "ttft_p95": 1.138,
+            "itl_p95": 0.0995
+          },
+          "long": {
+            "requests": 16,
+            "ttft_p50": 0.4914,
+            "ttft_p95": 0.9436,
+            "itl_p95": 0.087
+          }
+        },
+        "output_tokens_per_second": 89.53,
+        "goodput_per_second": 0.466
+      },
+      {
+        "rate_per_second": 8.0,
+        "token_budget": 512,
+        "chunked": true,
+        "by_length": {
+          "short": {
+            "requests": 16,
+            "ttft_p50": 1.7757,
+            "ttft_p95": 3.1461,
+            "itl_p95": 0.0694
+          },
+          "long": {
+            "requests": 16,
+            "ttft_p50": 1.7041,
+            "ttft_p95": 2.9647,
+            "itl_p95": 0.0594
+          }
+        },
+        "output_tokens_per_second": 140.38,
+        "goodput_per_second": 0.365
+      },
+      {
+        "rate_per_second": 8.0,
+        "token_budget": 8192,
+        "chunked": false,
+        "by_length": {
+          "short": {
+            "requests": 16,
+            "ttft_p50": 1.7163,
+            "ttft_p95": 3.1119,
+            "itl_p95": 0.0742
+          },
+          "long": {
+            "requests": 16,
+            "ttft_p50": 1.6153,
+            "ttft_p95": 2.8782,
+            "itl_p95": 0.0647
+          }
+        },
+        "output_tokens_per_second": 139.93,
+        "goodput_per_second": 0.546
+      }
+    ]
+  }
+}

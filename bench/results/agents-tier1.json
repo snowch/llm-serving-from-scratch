@@ -1,0 +1,105 @@
+{
+  "engine": "agents",
+  "generated_at": "2026-09-13T19:35:16+00:00",
+  "hardware": {
+    "platform": "Linux-6.18.44-fc-v24-x86_64-with-glibc2.39",
+    "machine": "x86_64",
+    "processor": "x86_64",
+    "cpu_count": 4,
+    "device": "cpu"
+  },
+  "model": {
+    "name": "TinyGPT (reference, random weights)",
+    "params": 5838080,
+    "vocab_size": 260,
+    "n_layers": 6,
+    "n_heads": 8,
+    "n_kv_heads": 2,
+    "head_dim": 32,
+    "ffn_mult": 4,
+    "max_seq_len": 2048,
+    "rope_theta": 10000.0,
+    "norm_eps": 1e-05,
+    "dtype": "fp32",
+    "seed": 0
+  },
+  "versions": {
+    "python": "3.11.15",
+    "torch": "2.14.0+cu130",
+    "numpy": "2.4.6"
+  },
+  "code_fingerprint": "1035968bf234a1f7",
+  "code_sources": [
+    "llmserve/engines/cancel.py",
+    "llmserve/engines/prefix.py"
+  ],
+  "conditions": {
+    "trace": "agent loop, 24 calls",
+    "rate_per_second": 8.0,
+    "slo": {
+      "ttft_seconds": 0.5,
+      "itl_seconds": 0.05
+    }
+  },
+  "summary": {
+    "per_call": {
+      "requests": 24,
+      "completed": 24,
+      "ttft_p50": 0.4247,
+      "ttft_p95": 0.9567,
+      "ttft_p99": 0.9987,
+      "itl_p50": 0.0528,
+      "itl_p95": 0.0571,
+      "output_tokens_per_second": 128.29,
+      "requests_per_second": 8.211,
+      "goodput_per_second": 0.342,
+      "goodput_fraction": 0.042,
+      "wall_time": 2.923
+    },
+    "token_reuse": 0.9444,
+    "chains": [
+      {
+        "calls": 1,
+        "p50": 1.0634,
+        "p95": 1.69,
+        "p99": 1.7179,
+        "p95_over_p50": 1.589
+      },
+      {
+        "calls": 4,
+        "p50": 4.5077,
+        "p95": 5.5971,
+        "p99": 6.0391,
+        "p95_over_p50": 1.242
+      },
+      {
+        "calls": 8,
+        "p50": 9.0123,
+        "p95": 10.5784,
+        "p99": 11.2072,
+        "p95_over_p50": 1.174
+      },
+      {
+        "calls": 16,
+        "p50": 18.007,
+        "p95": 20.2071,
+        "p99": 21.1267,
+        "p95_over_p50": 1.122
+      }
+    ],
+    "cancellation": {
+      "without": {
+        "steps": 58,
+        "tokens_produced": 375,
+        "aborted": 0
+      },
+      "with_cancellation": {
+        "steps": 44,
+        "tokens_produced": 273,
+        "aborted": 8
+      },
+      "steps_saved": 0.2414,
+      "abandoned_fraction": 0.3333
+    }
+  }
+}

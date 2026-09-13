@@ -12,12 +12,11 @@ import copy
 import json
 import time
 from dataclasses import asdict
-from datetime import UTC, datetime
 
 import torch
 from torch import nn
 
-from bench.harness import RESULTS_DIR, _hardware, _versions
+from bench.harness import RESULTS_DIR, stamped_payload
 from bench.train_tiny import evaluate_perplexity, held_out_data, train_reference_model
 from llmserve.arithmetic import kv_bytes_per_token
 from llmserve.config import REFERENCE_MODEL
@@ -114,25 +113,22 @@ def main() -> None:
         f"({outliers['ratio']:.0f}x worse)"
     )
 
-    payload = {
-        "engine": "quantisation",
-        "generated_at": datetime.now(UTC).isoformat(timespec="seconds"),
-        "hardware": _hardware(),
-        "model": {
+    payload = stamped_payload(
+        engine="quantisation",
+        model={
             "name": "TinyGPT, trained on the synthetic corpus",
             "params": sum(p.numel() for p in model.parameters()),
             **asdict(REFERENCE_MODEL),
         },
-        "versions": _versions(),
-        "code_fingerprint": "n/a-quantisation",
-        "engine_module": None,
-        "conditions": {
+        # Both the quantisers and the training run decide these numbers.
+        code_sources=["llmserve/quant.py", "bench/train_tiny.py"],
+        conditions={
             "trace": "held-out synthetic corpus, non-overlapping 128-token windows",
             "train_steps": args.steps,
             "baseline_perplexity": round(baseline_ppl, 4),
         },
-        "summary": {"weights": rows, "kv_cache": kv_rows, "outliers": outliers},
-    }
+        summary={"weights": rows, "kv_cache": kv_rows, "outliers": outliers},
+    )
     (RESULTS_DIR / "quant-tier1.json").write_text(json.dumps(payload, indent=2) + "\n")
     print("\nwrote bench/results/quant-tier1.json")
 

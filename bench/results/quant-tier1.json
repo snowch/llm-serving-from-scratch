@@ -1,6 +1,6 @@
 {
   "engine": "quantisation",
-  "generated_at": "2026-09-13T16:15:57+00:00",
+  "generated_at": "2026-09-13T19:16:17+00:00",
   "hardware": {
     "platform": "Linux-6.18.44-fc-v24-x86_64-with-glibc2.39",
     "machine": "x86_64",
@@ -28,8 +28,11 @@
     "torch": "2.14.0+cu130",
     "numpy": "2.4.6"
   },
-  "code_fingerprint": "n/a-quantisation",
-  "engine_module": null,
+  "code_fingerprint": "a69abdf6026d0504",
+  "code_sources": [
+    "llmserve/quant.py",
+    "bench/train_tiny.py"
+  ],
   "conditions": {
     "trace": "held-out synthetic corpus, non-overlapping 128-token windows",
     "train_steps": 400,
@@ -42,28 +45,28 @@
         "bits": 32,
         "perplexity": 1.8321,
         "linear_bytes": 23072768,
-        "decode_tok_per_s": 234.1
+        "decode_tok_per_s": 243.5
       },
       {
         "label": "INT8 per-tensor (naive)",
         "bits": 8,
         "perplexity": 1.8323,
         "linear_bytes": 5768364,
-        "decode_tok_per_s": 170.1
+        "decode_tok_per_s": 167.9
       },
       {
         "label": "INT8 per-channel",
         "bits": 8,
         "perplexity": 1.8322,
         "linear_bytes": 5839888,
-        "decode_tok_per_s": 166.3
+        "decode_tok_per_s": 172.1
       },
       {
         "label": "INT4 grouped (g=64)",
         "bits": 4,
         "perplexity": 1.8372,
         "linear_bytes": 3244608,
-        "decode_tok_per_s": 154.8
+        "decode_tok_per_s": 149.0
       }
     ],
     "kv_cache": [

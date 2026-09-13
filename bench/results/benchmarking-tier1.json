@@ -1,0 +1,85 @@
+{
+  "engine": "benchmarking",
+  "generated_at": "2026-09-13T19:12:46+00:00",
+  "hardware": {
+    "platform": "Linux-6.18.44-fc-v24-x86_64-with-glibc2.39",
+    "machine": "x86_64",
+    "processor": "x86_64",
+    "cpu_count": 4,
+    "device": "cpu"
+  },
+  "model": {
+    "name": "TinyGPT (reference, random weights)",
+    "params": 5838080,
+    "vocab_size": 260,
+    "n_layers": 6,
+    "n_heads": 8,
+    "n_kv_heads": 2,
+    "head_dim": 32,
+    "ffn_mult": 4,
+    "max_seq_len": 2048,
+    "rope_theta": 10000.0,
+    "norm_eps": 1e-05,
+    "dtype": "fp32",
+    "seed": 0
+  },
+  "versions": {
+    "python": "3.11.15",
+    "torch": "2.14.0+cu130",
+    "numpy": "2.4.6"
+  },
+  "code_fingerprint": "484e2d7058b9efef",
+  "code_sources": [
+    "bench/closed_loop.py",
+    "llmserve/engines/prefix.py",
+    "llmserve/engines/paged.py"
+  ],
+  "conditions": {
+    "trace": "48 requests, same workload under both generators",
+    "rate_per_second": 24.0,
+    "slo": {
+      "ttft_seconds": 0.5,
+      "itl_seconds": 0.05
+    }
+  },
+  "summary": {
+    "generators": [
+      {
+        "generator": "Open loop",
+        "detail": "24 req/s offered",
+        "ttft_p50": 1.9163,
+        "ttft_p95": 3.7798,
+        "ttft_p99": 3.9825,
+        "output_tokens_per_second": 337.34,
+        "requests_per_second": 8.157
+      },
+      {
+        "generator": "Closed loop",
+        "detail": "2 workers",
+        "ttft_p50": 0.0134,
+        "ttft_p95": 0.0234,
+        "ttft_p99": 0.0239,
+        "output_tokens_per_second": 252.73,
+        "requests_per_second": 6.111
+      },
+      {
+        "generator": "Closed loop",
+        "detail": "4 workers",
+        "ttft_p50": 0.0174,
+        "ttft_p95": 0.0391,
+        "ttft_p99": 0.0426,
+        "output_tokens_per_second": 348.86,
+        "requests_per_second": 8.436
+      },
+      {
+        "generator": "Closed loop",
+        "detail": "8 workers",
+        "ttft_p50": 0.0238,
+        "ttft_p95": 0.0872,
+        "ttft_p99": 0.0872,
+        "output_tokens_per_second": 437.38,
+        "requests_per_second": 10.576
+      }
+    ]
+  }
+}
