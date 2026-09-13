@@ -11,10 +11,17 @@ Every chapter re-runs the same benchmark, so progress is measured rather than as
 
 ## Status
 
-🚧 **Scaffolded, authoring not started.** All 29 chapters and 5 appendices exist as stubs —
-each carrying its hardware tier, prerequisites, the benchmark row it is expected to move, and an
-outline of all nine template sections. No prose is written yet; every chapter is marked
-`[DRAFT]`.
+🚧 **v0.1 — foundations written, 26 chapters to go.**
+
+- **Chapters 1–3 are written**, with every figure measured on a real run rather than asserted.
+- **The engine runs**: a code-defined transformer, byte-level tokenizer with streaming-safe
+  detokenisation, samplers, KV cache, and two engines (naive and cached) behind one interface.
+- **The harness runs**: open-loop Poisson load generation, TTFT/ITL percentiles, goodput against
+  a stated SLO. 42 tests, including equivalence tests proving the KV cache changes no output.
+- The remaining 26 chapters and 5 appendices are stubs, each marked `[DRAFT]`.
+
+No model download is needed: the reference model is built from code with seeded random weights,
+so the whole Tier 1 path runs on any laptop with no network access.
 
 - **[PLAN.md](PLAN.md)** — the full book plan: outline, companion-code design, hardware strategy,
   publishing pipeline, delivery roadmap, and the decisions behind them

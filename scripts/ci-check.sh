@@ -15,10 +15,16 @@ echo "== ruff format =="
 ruff format --check "${PY_PATHS[@]}"
 
 echo "== pytest (CPU tier only) =="
-pytest tests/ -q
+# `python3 -m pytest`, not bare `pytest`: the module form guarantees the tests run under the same
+# interpreter that has the project's dependencies. A standalone pytest (pipx, uv tool) has its own
+# isolated environment and cannot import torch or llmserve.
+python3 -m pytest tests/ -q
 
-echo "== benchmark number freshness =="
+echo "== benchmark result stamps =="
 python3 scripts/verify-numbers.py
+
+echo "== scorecard fragments up to date =="
+python3 scripts/render-scorecards.py --check
 
 echo "== myst build (strict) =="
 # --strict turns content warnings (broken cross-reference, unresolved citation) into a failure.

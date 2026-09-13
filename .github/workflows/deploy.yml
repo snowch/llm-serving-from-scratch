@@ -61,13 +61,16 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      # Chapters contain no executable cells: figures come from committed result files rendered
+      # by scripts/render-scorecards.py, so the book build needs neither a Jupyter kernel nor
+      # torch. That keeps deploys fast and removes a whole class of unrelated failure.
       - name: Build the book
         env:
           # base_path is "/" for a user site and "/repo" for a project site; MyST wants an
           # empty string at the root. Without this every asset and link 404s under
           # /llm-serving-from-scratch/ (PLAN.md §9).
           BASE_URL: ${{ steps.pages.outputs.base_path == '/' && '' || steps.pages.outputs.base_path }}
-        run: myst build --html --execute --strict
+        run: myst build --html --strict
 
       - name: Copy robots.txt
         run: cp robots.txt _build/html/robots.txt

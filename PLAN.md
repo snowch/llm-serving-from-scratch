@@ -254,7 +254,7 @@ about GPU serving whose examples nobody can run is a blog post with extra steps.
 
 | Tier | Hardware | Model | What works |
 |---|---|---|---|
-| **Default** | Any laptop, CPU-only | Qwen2.5-0.5B-Instruct (GPT-2 124M for the tiniest demos) | Every mechanism in the book runs: KV cache, continuous batching, paged blocks, prefix caching, scheduling, the full API server. Absolute numbers are not GPU numbers, but the *ratios and mechanisms* hold. |
+| **Default** | Any laptop, CPU-only | `TinyGPT` — a ~5.8M-parameter transformer **defined in `llmserve/model.py` with seeded random weights**, no download | Every mechanism in the book runs: KV cache, continuous batching, paged blocks, prefix caching, scheduling, the full API server. Absolute numbers are not GPU numbers, but the *ratios and mechanisms* hold. |
 | **Recommended** | One 24 GB consumer GPU (RTX 3090/4090) or cloud L4/A10G | Qwen2.5-1.5B / Llama-3.2-1B-Instruct, plus a 7–8B model for realism | All published scorecard numbers, quantisation, Triton kernel, speculation. |
 | **Advanced** | 2–4× A100/H100, rented hourly | 7–8B and one 70B quantised | Parts V chapters 17–18 only. Each of these chapters states the hourly cost of reproducing it. |
 
@@ -267,8 +267,15 @@ about GPU serving whose examples nobody can run is a blog post with extra steps.
 - CI executes the Tier 1 path only ([§9](#9-build-and-publishing-pipeline)); no chapter may
   have an executable cell needing a GPU. GPU results are generated manually by a committed
   script and checked into `bench/results/`.
-- Model weights are never committed. Chapter 1 includes a download-and-verify step, and the
-  book works with any small instruct model so it survives a model being pulled from the Hub.
+- **The Tier 1 model is built from code, not downloaded.** A seeded random-weight `TinyGPT`
+  makes the default path work with no network access at all, keeps results bit-reproducible
+  across machines, and cannot be invalidated by a model being pulled from the Hub. Its output is
+  meaningless text, which is fine: every quantity this book measures depends on the *shape* of
+  the computation, not the values in the weights. A byte-level tokenizer comes with it, which
+  also makes ch04's incremental-detokenisation bug concrete rather than hypothetical.
+- **Where output quality genuinely matters — ch14's quantisation chapter above all — a trained
+  model is required, and that chapter says so.** Those sections need Hugging Face access.
+- Model weights are never committed.
 
 ---
 
@@ -324,11 +331,19 @@ copy-pasted code in prose goes stale within two chapters.
 
 ### 6.3 How numbers get into the book
 
-1. `bench/harness.py` writes `bench/results/<chapter>-<tier>-<date>.json`, stamping model,
-   hardware, driver, library versions, trace, and request rate.
-2. Chapters read those JSON files and render the scorecard table programmatically.
-3. `scripts/verify-numbers.py` fails CI if a chapter references a result file that does not
-   exist or is older than the code it describes.
+1. `bench/harness.py` writes `bench/results/<engine>-rate<N>-<tier>.json`, stamping model,
+   hardware, library versions, trace, and request rate.
+2. Each table is declared once in `bench/scorecards.py` and rendered to a markdown fragment in
+   `chapters/_generated/` by `scripts/render-scorecards.py`. Chapters pull it in with
+   `{include}`.
+3. Two CI guards: `scripts/verify-numbers.py` (every cited result exists, carries its stamps, and
+   does not predate the engine code it measures) and `scripts/render-scorecards.py --check`
+   (every committed fragment still matches the results).
+
+**Chapters contain no executable cells.** Rendering figures by executing Python during the book
+build was the original plan; it makes every deploy depend on a Jupyter kernel and a torch install,
+which fail for reasons unrelated to the book. Pre-rendering keeps the build pure markdown and lets
+CI *diff* the regenerated output — a stronger staleness guarantee than execution provides.
 
 No number is ever typed into prose by hand. This is what lets the book make performance
 claims credibly and keeps it honest when a library upgrade changes the answer.
@@ -367,7 +382,7 @@ chapter 12:
 | Chapter source | `.md` with MyST frontmatter (`jupytext`/`kernelspec` when a chapter executes), or `.ipynb` — matching the existing site's chapter files |
 | Config / TOC | `myst.yml` with `project.toc`, exactly like the site |
 | Quoting code from `llmserve/` | `{literalinclude}` directive with `:start-at:` / `:end-at:` anchors ([§6.2](#62-per-chapter-checkpoints)) |
-| Not executing GPU code in CI | Execution is opt-in per file. GPU work is a static code block plus committed results; only cheap cells (reading result JSON, plotting) execute. See [§9](#9-build-and-publishing-pipeline) |
+| Not executing GPU code in CI | Nothing executes at build time at all — figures are pre-rendered fragments ([§6.3](#63-how-numbers-get-into-the-book)), so the book build needs no kernel and no torch |
 | Execution caching | `_build/execute` and `_build/templates`, cached in Actions by a key hashing `requirements.txt` + `myst.yml` |
 | Cross-references | `(label)=` targets with `[](#label)`; citations via `@citekey` against `references.bib` |
 | PDF | `myst build --pdf` (LaTeX/Typst). Lower fidelity than Quarto's book PDF — acceptable; HTML is the primary format |
@@ -525,7 +540,7 @@ in-progress work `[DRAFT]`, so shipping incrementally is consistent with existin
 
 | Release | Contents | Why this is the cut |
 |---|---|---|
-| **v0.1 — Foundations** | Repo scaffolding, CI, Pages deploy · index/preface · ch01–ch03 · `bench/` harness · Tier 1 environment (Appendix B) | Establishes the baseline *and* the scorecard. Nothing later can be written credibly without the harness. Site link goes live here. |
+| **v0.1 — Foundations** ✅ | Repo scaffolding, CI, Pages deploy · index/preface · ch01–ch03 written with measured figures · `bench/` harness · `llmserve` model/tokenizer/sampling/engines · 42 tests | Establishes the baseline *and* the scorecard. Nothing later can be written credibly without the harness. |
 | **v0.2 — The Decode Loop** | ch04–ch06 · `llmserve` KV cache + static batching · equivalence tests · first three scorecard rows | Proves the measure-every-chapter format works end to end at small scale. |
 | **v0.3 — The Engine** | ch07–ch10 · continuous batching, paged blocks, prefix cache, chunked prefill · checkpoint tags | The centre of gravity. At this point the book is already the most useful thing on the site about serving. |
 | **v0.4 — Cheaper Math** | ch12, ch14, ch15 · quantisation + speculation · GPU-tier results published | First release with meaningful GPU numbers; needs the Tier 2 machine. |

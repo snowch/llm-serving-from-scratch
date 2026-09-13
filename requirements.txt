@@ -4,10 +4,8 @@
 # invalidates them silently (PLAN.md §12.4). Versions verified 2026-09-13.
 #
 # The book *builder* is not here — MyST comes from npm, pinned in package.json, so there is
-# exactly one source of truth for its version.
-
-# --- notebook/markdown interop ---
-jupytext==1.19.5
+# exactly one source of truth for its version. Nor is any Jupyter tooling: chapters contain no
+# executable cells, so building the book needs neither a kernel nor torch.
 
 # --- engine ---
 torch==2.14.0
