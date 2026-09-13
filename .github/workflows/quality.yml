@@ -32,10 +32,14 @@ jobs:
         # and myst is missing, so this step going wrong cannot pass silently.
         run: npm install -g "mystmd@$(node -p "require('./package.json').devDependencies.mystmd")"
 
-      - name: Install dev dependencies
+      - name: Install dependencies
+        # Both files. requirements-dev.txt alone was enough while the tests only exercised pure
+        # Python, but the engine is real now and the test suite imports torch. Installing only the
+        # dev tooling made CI unable to run a single test while still reporting success on lint —
+        # the tests errored at collection, which is a failure, but a silent-looking one.
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements-dev.txt
+          pip install -r requirements.txt -r requirements-dev.txt
 
       - name: Run the same checks as locally
         # ci-check.sh is the single source of truth for what CI runs, so local and CI can never
