@@ -164,3 +164,13 @@ def memory_table(block_size: int = 16, n_blocks: int = 24) -> str:
     lines = ["| Quantity | Value |", "|---|---|"]
     lines += [f"| {a} | {b} |" for a, b in rows]
     return "\n".join(lines)
+
+
+def chunk_cost_table(name: str = "chunk-cost-tier1") -> str:
+    """Render the cost of splitting one prefill into several passes."""
+    data = load(name)
+    rows = data["summary"]["passes"]
+    lines = ["| Passes | Tokens per pass | Total time |", "|---|---|---|"]
+    for row in rows:
+        lines.append(f"| {row['passes']} | {row['chunk']} | {row['ms']} ms |")
+    return "\n".join(lines)

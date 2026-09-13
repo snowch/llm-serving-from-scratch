@@ -1,6 +1,6 @@
 {
   "engine": "prefix",
-  "generated_at": "2026-09-13T14:49:14+00:00",
+  "generated_at": "2026-09-13T15:04:33+00:00",
   "hardware": {
     "platform": "Linux-6.18.44-fc-v24-x86_64-with-glibc2.39",
     "machine": "x86_64",
@@ -43,15 +43,15 @@
   "summary": {
     "requests": 24,
     "completed": 24,
-    "ttft_p50": 0.0227,
-    "ttft_p95": 0.0412,
-    "ttft_p99": 0.0514,
-    "itl_p50": 0.0089,
-    "itl_p95": 0.0174,
-    "output_tokens_per_second": 134.88,
-    "requests_per_second": 4.011,
-    "goodput_per_second": 4.011,
+    "ttft_p50": 0.0235,
+    "ttft_p95": 0.0423,
+    "ttft_p99": 0.0444,
+    "itl_p50": 0.0084,
+    "itl_p95": 0.0133,
+    "output_tokens_per_second": 136.82,
+    "requests_per_second": 4.069,
+    "goodput_per_second": 4.069,
     "goodput_fraction": 1.0,
-    "wall_time": 5.983
+    "wall_time": 5.898
   }
 }

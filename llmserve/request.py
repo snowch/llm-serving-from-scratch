@@ -42,6 +42,10 @@ class RequestState:
     block_table: list[int] = field(default_factory=list)
     #: how many tokens of this sequence are actually stored (ch08)
     stored: int = 0
+    #: how many tokens must be cached before this sequence can decode (ch10).
+    #: Not len(all_token_ids): that grows with every generated token, so comparing against it
+    #: makes a decoding sequence look like it is prefilling again.
+    prefill_target: int = 0
     finished: bool = False
     finish_reason: str | None = None
 

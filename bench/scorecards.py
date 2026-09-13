@@ -65,6 +65,11 @@ SCORECARDS: dict[str, list[tuple[str, str]]] = {
         ("ch08 Paged, chat 16 req/s", "paged-chat-rate16-tier1"),
         ("ch09 Prefix cache, chat 16 req/s", "prefix-chat-rate16-tier1"),
     ],
+    "ch10-token-budget": [
+        ("Budget 64 tokens/step", "chunked-budget64-tier1"),
+        ("Budget 512 tokens/step", "chunked-budget512-tier1"),
+        ("Budget 8192 (no chunking)", "chunked-budget8192-tier1"),
+    ],
     # The running scorecard: the whole journey so far, at one saturating rate.
     "ch07-running-scorecard": [
         ("ch01 Naive", "naive-rate16-tier1"),
@@ -85,4 +90,5 @@ CONDITIONS: dict[str, str] = {
     "ch07-running-scorecard": "continuous-rate16-tier1",
     "ch08-paged": "paged-rate16-tier1",
     "ch09-prefix-caching": "prefix-chat-rate8-tier1",
+    "ch10-token-budget": "chunked-budget512-tier1",
 }

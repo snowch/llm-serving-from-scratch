@@ -55,3 +55,34 @@ def make_chat_trace(
             )
         )
     return specs
+
+
+def make_mixed_prompt_trace(
+    n_requests: int,
+    rate_per_second: float,
+    *,
+    short_len: tuple[int, int] = (16, 48),
+    long_len: int = 512,
+    long_fraction: float = 0.2,
+    output_len: tuple[int, int] = (24, 48),
+    seed: int = 0,
+) -> list[RequestSpec]:
+    """Mostly short prompts with an occasional very long one.
+
+    This is the shape chapter 10 exists for. A long prompt is not itself a problem; a long prompt
+    processed in a single indivisible step is, because every sequence currently streaming stops
+    until it finishes. Traces with uniform prompt lengths hide the effect entirely, which is why
+    the earlier chapters' numbers never showed it.
+    """
+    rng = np.random.default_rng(seed)
+    gaps = rng.exponential(1.0 / rate_per_second, size=n_requests)
+    arrivals = np.cumsum(gaps)
+    is_long = rng.random(n_requests) < long_fraction
+    shorts = rng.integers(short_len[0], short_len[1] + 1, size=n_requests)
+    outputs = rng.integers(output_len[0], output_len[1] + 1, size=n_requests)
+
+    specs = []
+    for arrival, long_flag, short, out in zip(arrivals, is_long, shorts, outputs, strict=True):
+        length = long_len if long_flag else int(short)
+        specs.append(RequestSpec(arrival=float(arrival), prompt_len=length, max_tokens=int(out)))
+    return specs

@@ -49,6 +49,23 @@ def git_epoch(path: str) -> int:
     return int(result.stdout.strip() or 0)
 
 
+def uncommitted() -> set[str]:
+    """Paths with working-tree changes.
+
+    A result that has just been regenerated has no new commit yet, so comparing commit times would
+    report it as stale — the opposite of the truth, and it would make the guard cry wolf exactly
+    when someone is doing the right thing.
+    """
+    result = subprocess.run(
+        ["git", "status", "--porcelain", "--", "bench/results"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return {line[3:].strip() for line in result.stdout.splitlines() if line.strip()}
+
+
 def cited_results() -> set[str]:
     names = {name for rows in SCORECARDS.values() for _, name in rows}
     return names | set(CONDITIONS.values())
@@ -73,10 +90,11 @@ def main() -> int:
                 problems.append(f"{name}.json is missing the required '{stamp}' stamp")
 
     newest_code = max((git_epoch(d) for d in CODE_DIRS), default=0)
+    pending = uncommitted()
     if newest_code:
         for name in sorted(names):
             rel = f"bench/results/{name}.json"
-            if not (RESULTS / f"{name}.json").exists():
+            if not (RESULTS / f"{name}.json").exists() or rel in pending:
                 continue
             committed = git_epoch(rel)
             if committed and committed < newest_code:
