@@ -99,7 +99,7 @@ Prefill assembles the rectangle and takes it apart again:
 ```{literalinclude} ../llmserve/engines/batched.py
 :language: python
 :start-at: def _prefill_batch
-:end-before:     lengths = [state.request.prompt_len
+:end-before:     lengths = [len(state.all_token_ids)
 ```
 
 The engine itself is small, and the waste is instrumented rather than described:
