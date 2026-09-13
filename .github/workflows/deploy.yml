@@ -32,9 +32,9 @@ jobs:
             _build/templates
           # bench/results is in the key on purpose: a new benchmark result must invalidate
           # executed output, or the book publishes stale numbers (PLAN.md §9, gotcha 4).
-          key: myst-v1-${{ runner.os }}-node20-py311-${{ hashFiles('requirements.txt', 'package.json', 'myst.yml', 'bench/results/*.json') }}
+          key: myst-v1-${{ runner.os }}-node22-py311-${{ hashFiles('requirements.txt', 'package.json', 'myst.yml', 'bench/results/*.json') }}
           restore-keys: |
-            myst-v1-${{ runner.os }}-node20-py311-
+            myst-v1-${{ runner.os }}-node22-py311-
 
       - name: Setup Pages
         id: pages
@@ -43,7 +43,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
 
       - name: Install MyST CLI (pinned)
         # Pinned via package.json so a build that worked yesterday cannot break with no commit

@@ -27,8 +27,13 @@ echo "== myst build (strict) =="
 # fails. --execute is left to the deploy workflow.
 if command -v myst >/dev/null 2>&1; then
   myst build --html --strict
+elif [ -n "${CI:-}" ]; then
+  # A check that silently skips itself is not a check. CI installs myst, so absence here means
+  # the workflow is misconfigured, and we would rather fail loudly than publish a broken link.
+  echo "ERROR: myst is not installed and CI must not skip the book build." >&2
+  exit 1
 else
-  echo "  myst not installed; skipping."
+  echo "  myst not installed; skipping locally."
   echo "  install with: npm install -g \"mystmd@$(node -p "require('./package.json').devDependencies.mystmd")\""
 fi
 
