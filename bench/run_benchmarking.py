@@ -1,4 +1,4 @@
-"""Generate the chapter 28 results: the same engine, measured two ways, reported differently.
+"""Generate the chapter 31 results: the same engine, measured two ways, reported differently.
 
 Run with ``python -m bench.run_benchmarking``. One engine, one workload, two load generators — the
 open loop this book has used since chapter 2, and the closed loop most load tests are written with.

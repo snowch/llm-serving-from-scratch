@@ -1,6 +1,6 @@
 """Speculative decoding: breaking the one-token-at-a-time serialisation.
 
-Chapter 15. Decode is serial by construction — token *n+1* depends on token *n* — so at low batch
+Chapter 17. Decode is serial by construction — token *n+1* depends on token *n* — so at low batch
 the device spends most of its time waiting on a dependency rather than on arithmetic. Chapter 3
 explains why that is so wasteful: the step is bound by reading the weights, and reading them to
 produce one token is the worst possible ratio.
@@ -182,7 +182,7 @@ def speculative_generate(
 
     Deliberately written without a KV cache for the target. Caching across speculative rounds is
     fiddly — a rejected proposal has to be rolled back out of the cache — and it would obscure the
-    part of this that is worth understanding. Chapter 15's measurement therefore counts *target
+    part of this that is worth understanding. Chapter 17's measurement therefore counts *target
     forward passes*, which is the quantity speculation reduces, rather than wall-clock.
     """
     stats = stats if stats is not None else SpeculationStats()

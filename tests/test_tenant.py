@@ -1,4 +1,4 @@
-"""Chapter 19: fairness between tenants sharing one engine."""
+"""Chapter 21: fairness between tenants sharing one engine."""
 
 import pytest
 import torch

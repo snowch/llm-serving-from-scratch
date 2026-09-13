@@ -80,12 +80,32 @@ class PrefixCache:
             published.append(block_table[i])
         return published
 
-    def evict_oldest(self) -> int | None:
-        """Drop the least recently used entry and return its block, or None if empty."""
+    def insert(self, key: int, block: int) -> None:
+        """Record a block against a key the cache already knows how to compute.
+
+        Used by chapter 12 to put a block back after promoting it from a slower tier. Publishing
+        would not do: publish derives keys from a token sequence, and a promotion already has the
+        key — it is the same key the block was demoted under.
+        """
+        self._entries[key] = block
+        self._entries.move_to_end(key)
+
+    def evict_oldest_with_key(self) -> tuple[int, int] | None:
+        """The least recently used entry, key and all.
+
+        Chapter 9 only ever needed the block, because it was about to be thrown away. Chapter 12
+        needs the key as well: a demoted block has to be findable again, and the physical block
+        number is the one thing about it that will not survive — the allocator reuses that slot
+        immediately.
+        """
         if not self._entries:
             return None
-        _, block = self._entries.popitem(last=False)
-        return block
+        return self._entries.popitem(last=False)
+
+    def evict_oldest(self) -> int | None:
+        """Drop the least recently used entry and return its block, or None if empty."""
+        evicted = self.evict_oldest_with_key()
+        return None if evicted is None else evicted[1]
 
     @property
     def hit_rate(self) -> float:

@@ -159,7 +159,7 @@ class RequestSpec:
     prompt_len: int
     max_tokens: int
     tokens: tuple[int, ...] | None = None
-    #: which tenant submitted it (ch19); None for the single-tenant traces
+    #: which tenant submitted it (ch21); None for the single-tenant traces
     tenant: str | None = None
 
 
@@ -268,7 +268,7 @@ class BenchResult:
             "wall_time": round(self.wall_time, 3),
         }
 
-        # A fleet-wide percentile hides exactly the thing chapter 19 is about: one tenant can be
+        # A fleet-wide percentile hides exactly the thing chapter 21 is about: one tenant can be
         # served perfectly while another is starved, and the aggregate looks fine either way. The
         # key only appears when the trace actually has tenants, so single-tenant results are
         # unchanged.

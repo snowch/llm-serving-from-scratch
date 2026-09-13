@@ -1,4 +1,4 @@
-"""Generate the chapter 26 results: what refusing work buys, and what draining costs.
+"""Generate the chapter 28 results: what refusing work buys, and what draining costs.
 
 Run with ``python -m bench.run_reliability``. The same overload served twice — once accepting
 everything, once with admission control — and then a drain, to show that finishing in-flight work

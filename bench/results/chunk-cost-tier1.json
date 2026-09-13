@@ -1,6 +1,6 @@
 {
   "engine": "microbenchmark",
-  "generated_at": "2026-09-13T19:08:19+00:00",
+  "generated_at": "2026-09-13T20:49:53+00:00",
   "hardware": {
     "platform": "Linux-6.18.44-fc-v24-x86_64-with-glibc2.39",
     "machine": "x86_64",
@@ -28,7 +28,7 @@
     "torch": "2.14.0+cu130",
     "numpy": "2.4.6"
   },
-  "code_fingerprint": "d02eb938d05d332c",
+  "code_fingerprint": "6bc944541ac11fef",
   "code_sources": [],
   "conditions": {
     "prompt_len": 1536,
@@ -39,17 +39,17 @@
       {
         "passes": 1,
         "chunk": 1536,
-        "ms": 733.3
+        "ms": 758.1
       },
       {
         "passes": 6,
         "chunk": 256,
-        "ms": 384.2
+        "ms": 376.6
       },
       {
         "passes": 24,
         "chunk": 64,
-        "ms": 362.7
+        "ms": 392.2
       }
     ]
   }

@@ -1,4 +1,4 @@
-"""Chapter 27: what a token costs, from quantities you can actually look up.
+"""Chapter 29: what a token costs, from quantities you can actually look up.
 
 Nothing here is measured, and that is the point. Cost is arithmetic over four inputs — what the
 hardware costs per hour, how many tokens per second it sustains, how busy it is, and what mix of

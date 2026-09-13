@@ -1,6 +1,6 @@
 {
   "engine": "reliability",
-  "generated_at": "2026-09-13T19:53:58+00:00",
+  "generated_at": "2026-09-13T20:54:48+00:00",
   "hardware": {
     "platform": "Linux-6.18.44-fc-v24-x86_64-with-glibc2.39",
     "machine": "x86_64",
@@ -28,7 +28,7 @@
     "torch": "2.14.0+cu130",
     "numpy": "2.4.6"
   },
-  "code_fingerprint": "fdd44f12f20197a7",
+  "code_fingerprint": "3b3797996ce08619",
   "code_sources": [
     "llmserve/engines/shedding.py",
     "llmserve/engines/cancel.py"
@@ -48,17 +48,17 @@
         "policy": "accept everything",
         "rejected": 0,
         "served": 48,
-        "ttft_p95": 3.7939,
-        "goodput_per_second": 1.995,
-        "output_tokens_per_second": 330.71
+        "ttft_p95": 3.9494,
+        "goodput_per_second": 1.622,
+        "output_tokens_per_second": 322.61
       },
       {
         "policy": "shed on queue depth",
         "rejected": 24,
         "served": 24,
-        "ttft_p95": 0.9436,
-        "goodput_per_second": 4.02,
-        "output_tokens_per_second": 352.43
+        "ttft_p95": 0.8244,
+        "goodput_per_second": 4.17,
+        "output_tokens_per_second": 340.91
       }
     ],
     "drain": {

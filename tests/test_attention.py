@@ -1,4 +1,4 @@
-"""Chapter 12: online softmax must equal the batch computation, exactly enough to rely on."""
+"""Chapter 13: online softmax must equal the batch computation, exactly enough to rely on."""
 
 import math
 

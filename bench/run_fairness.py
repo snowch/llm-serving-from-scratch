@@ -1,7 +1,7 @@
-"""Generate the chapter 19 fairness results: one noisy tenant, two quiet ones.
+"""Generate the chapter 21 fairness results: one noisy tenant, two quiet ones.
 
 Run with ``python -m bench.run_fairness``. The same trace served twice — once by the chapter 9
-engine, whose queue is one line, and once by the chapter 19 engine, whose queue is one line per
+engine, whose queue is one line, and once by the chapter 21 engine, whose queue is one line per
 tenant. Nothing else differs, so any change in the quiet tenants' latency is the scheduler.
 """
 

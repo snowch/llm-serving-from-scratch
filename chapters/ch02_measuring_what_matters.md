@@ -151,7 +151,7 @@ accepting deliberately:
   frozen once chapters start citing it. Where it must change, all results get regenerated
   together, never piecemeal.
 - **The trace is part of the measurement.** These numbers describe Poisson arrivals with prompts
-  of 32–96 tokens and outputs of 16–48. {ref}`ch21` shows that changing that distribution can
+  of 32–96 tokens and outputs of 16–48. {ref}`ch23` shows that changing that distribution can
   reverse which engine looks faster. A benchmark without its trace is not a result.
 - **Measuring costs CPU.** The harness shares this machine with the engine. The loop sleeps rather
   than spins when idle, but on a busy system the measurement is part of the load.

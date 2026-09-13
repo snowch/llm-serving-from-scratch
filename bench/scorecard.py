@@ -274,7 +274,7 @@ def score_matrix_table() -> str:
 
 
 def quantisation_table(name: str = "quant-tier1") -> str:
-    """Chapter 14's three axes in one table: quality, memory, speed."""
+    """Chapter 15's three axes in one table: quality, memory, speed."""
     data = load(name)
     rows = data["summary"]["weights"]
     baseline = rows[0]["perplexity"]
@@ -392,7 +392,7 @@ def mask_cost_table(name: str = "constrained-tier1") -> str:
 
 
 def routing_table() -> str:
-    """Chapter 18: what each routing policy buys and what it costs in balance."""
+    """Chapter 20: what each routing policy buys and what it costs in balance."""
     rows = [
         ("Round-robin", "router-round-robin-tier1"),
         ("Least outstanding tokens", "router-least-tokens-tier1"),
@@ -496,7 +496,7 @@ def lora_batch_table(name: str = "lora-tier1") -> str:
 
 def fairness_table() -> str:
     """Per-tenant time to first token, first-come-first-served against weighted fair queueing."""
-    runs = [("FIFO (ch09)", "tenants-fifo-tier1"), ("Fair queue (ch19)", "tenants-fair-tier1")]
+    runs = [("FIFO (ch09)", "tenants-fifo-tier1"), ("Fair queue (ch21)", "tenants-fair-tier1")]
     per_run = {label: load(stem)["summary"] for label, stem in runs}
     tenants = sorted(next(iter(per_run.values())).get("by_tenant", {}))
 
@@ -813,24 +813,35 @@ def final_scorecard_table() -> str:
         ("ch09", "Prefix caching", "chat, 8 req/s", "prefix-chat-rate8-tier1"),
         ("ch10", "Chunked prefill", "mixed lengths, 8 req/s", "chunked-budget512-tier1"),
         ("ch11", "Disaggregated pools", "uniform, 16 req/s", "disagg-rate16-tier1"),
+        ("ch12", "KV offload to a second tier", "multi-tenant, small pool", "offload-tier1"),
         (
-            "ch18",
+            "ch20",
             "Fleet, prefix-affinity routing",
             "multi-tenant, 8 req/s",
             "router-prefix-affinity-tier1",
         ),
-        ("ch19", "Fair queueing", "noisy neighbour, 4 req/s", "tenants-fair-tier1"),
+        ("ch21", "Fair queueing", "noisy neighbour, 4 req/s", "tenants-fair-tier1"),
     ]
     lines = [
         "| Chapter | Engine | Workload | Output tok/s | TTFT p95 | Goodput req/s |",
         "|---|---|---|---|---|---|",
     ]
     for chapter, engine, workload, name in rows:
-        s = load(name)["summary"]
-        lines.append(
-            f"| {chapter} | {engine} | {workload} | {s['output_tokens_per_second']} | "
-            f"{s['ttft_p95']}s | {s['goodput_per_second']} |"
-        )
+        summary = load(name)["summary"]
+        # Chapter 12's runner compares two policies rather than serving one trace, so its headline
+        # row is the tier-backed policy from inside that comparison.
+        if "policies" in summary:
+            policy = summary["policies"][-1]
+            cells = (
+                f"{policy['output_tokens_per_second']} | {policy['ttft_p95']}s | "
+                f"{policy['goodput_per_second']}"
+            )
+        else:
+            cells = (
+                f"{summary['output_tokens_per_second']} | {summary['ttft_p95']}s | "
+                f"{summary['goodput_per_second']}"
+            )
+        lines.append(f"| {chapter} | {engine} | {workload} | {cells} |")
     return "\n".join(lines)
 
 
@@ -943,5 +954,137 @@ def gather_cost_table() -> str:
         "decode step produces one token per sequence, so every byte here is moved to generate a "
         "handful of tokens — and the gather moves the cache twice, once to collect it and once for "
         "the model to append to it."
+    )
+    return "\n".join(lines)
+
+
+def offload_table(name: str = "offload-tier1") -> str:
+    """Chapter 12: what demoting blocks buys over dropping them, on a pool that is too small."""
+    rows = load(name)["summary"]["policies"]
+    lines = [
+        "| Eviction policy | Prefix reuse | TTFT p95 | Output tok/s | Promotions |",
+        "|---|---|---|---|---|",
+    ]
+    for row in rows:
+        lines.append(
+            f"| {row['policy']} | {row['token_reuse']:.0%} | {row['ttft_p95']}s | "
+            f"{row['output_tokens_per_second']} | {row['promotions']:,} |"
+        )
+    return "\n".join(lines)
+
+
+def offload_arithmetic_table(name: str = "offload-tier1") -> str:
+    """Chapter 12: whether a tier pays, which is a question about the link and nothing else."""
+    data = load(name)["summary"]["arithmetic"]
+    lines = [
+        "| Tier | Bandwidth | Fetch 2k tokens | Recompute them | Cheaper by |",
+        "|---|---|---|---|---|",
+    ]
+    for row in data["tiers"]:
+        lines.append(
+            f"| {row['link']} | {row['bandwidth'] / 1e9:.1f} GB/s | "
+            f"{row['fetch_seconds'] * 1000:.1f} ms | {row['recompute_seconds'] * 1000:.0f} ms | "
+            f"{row['speedup']:.0f}x |"
+        )
+    lines.append("")
+    lines.append(
+        f": 8B model, GQA with 8 KV heads, fp16, against a prefill rate of "
+        f"{data['prefill_tokens_per_second']:,.0f} tokens per second. Fetching and recomputing cost "
+        f"the same at {data['break_even_bytes_per_second'] / 1e9:.2f} GB/s — below every tier here."
+    )
+    return "\n".join(lines)
+
+
+def window_quality_table(name: str = "window-tier1") -> str:
+    """Chapter 16: what a bounded cache costs in quality, on both sides of the trained context."""
+    rows = load(name)["summary"]["quality"]
+    conditions = load(name)["conditions"]
+    lines = [
+        "| Tokens scored | Configuration | KV tokens held | Perplexity |",
+        "|---|---|---|---|",
+    ]
+    for row in rows:
+        perplexity = (
+            f"{row['perplexity']}" if row.get("perplexity") is not None else "**cannot run**"
+        )
+        lines.append(
+            f"| {row['tokens']:,} | {row['configuration']} | {row['kv_tokens']:,} | {perplexity} |"
+        )
+    lines.append("")
+    lines.append(
+        f": The model was trained to {conditions['max_seq_len']:,} tokens. Past that a position has "
+        "no rotary embedding to look up, so any configuration feeding original positions does not "
+        "run at all — which is the result, not a gap in the table."
+    )
+    return "\n".join(lines)
+
+
+def sink_table(name: str = "window-tier1") -> str:
+    """Chapter 16: whether this model actually has attention sinks, measured rather than assumed."""
+    data = load(name)["summary"]["sinks"]
+    rows = [
+        ("Tokens kept as sinks", f"{data['first_tokens']}"),
+        ("Attention mass they receive", f"{data['mean_mass']:.1%}"),
+        ("Their share if attention were even", f"{data['uniform_share']:.1%}"),
+        (
+            "Concentration",
+            f"{data['mean_mass'] / data['uniform_share']:.0f}x" if data["uniform_share"] else "—",
+        ),
+    ]
+    lines = ["| Quantity | Value |", "|---|---|"]
+    lines += [f"| {a} | {b} |" for a, b in rows]
+    return "\n".join(lines)
+
+
+def window_memory_table(name: str = "window-tier1") -> str:
+    """Chapter 16: a bound turns the cache from linear in context into constant."""
+    rows = load(name)["summary"]["memory"]
+    lines = [
+        "| Context | Full cache | Bounded | Sequences in 40 GB: full → bounded |",
+        "|---|---|---|---|",
+    ]
+    for row in rows:
+        lines.append(
+            f"| {row['context']:,} | {row['full_bytes'] / 1e9:.2f} GB | "
+            f"{row['bounded_bytes'] / 1e9:.2f} GB | "
+            f"{row['sequences_in_40gb_full']} → {row['sequences_in_40gb_bounded']} |"
+        )
+    return "\n".join(lines)
+
+
+def latent_attention_table() -> str:
+    """Chapter 13: MLA's compression, from the shapes alone."""
+    from llmserve.arithmetic import kv_bytes_per_token
+    from llmserve.config import ModelConfig
+    from llmserve.latent import LatentConfig, latent_bytes_per_token
+
+    gqa = ModelConfig(
+        vocab_size=128_256, n_layers=32, n_heads=32, n_kv_heads=8, head_dim=128, dtype="fp16"
+    )
+    mha = ModelConfig(
+        vocab_size=128_256, n_layers=32, n_heads=32, n_kv_heads=32, head_dim=128, dtype="fp16"
+    )
+    lines = [
+        "| Cache layout | KV per token | Per 32k sequence | Sequences in 40 GB |",
+        "|---|---|---|---|",
+    ]
+
+    def row(label: str, per_token: float) -> str:
+        per_sequence = per_token * 32768
+        return (
+            f"| {label} | {per_token / 1024:.0f} KiB | {per_sequence / 1e9:.2f} GB | "
+            f"{int(40e9 // per_sequence)} |"
+        )
+
+    lines.append(row("MHA, 32 KV heads", kv_bytes_per_token(mha)))
+    lines.append(row("GQA 4:1, 8 KV heads", kv_bytes_per_token(gqa)))
+    for d_latent in (1024, 512, 256):
+        lines.append(
+            row(f"MLA, latent {d_latent}", latent_bytes_per_token(gqa, LatentConfig(d_latent)))
+        )
+    lines.append("")
+    lines.append(
+        ": 8B-shaped model, 32 layers, fp16. MLA caches one latent vector per token per layer "
+        "rather than a key and a value per KV head, so the cache stops scaling with head count."
     )
     return "\n".join(lines)

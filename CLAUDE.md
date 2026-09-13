@@ -60,9 +60,17 @@ match `.pre-commit-config.yaml`.
 
 ## Chapter status
 
-All 29 chapters and all 5 appendices are written, with measured figures. Two chapters are explicit
-about hardware the default tier does not have: ch13 contains the paged-decode algorithm, its tests
+All 32 chapters and all 5 appendices are written, with measured figures. Two chapters are explicit
+about hardware the default tier does not have: ch14 contains the paged-decode algorithm, its tests
 and its arithmetic but no Triton kernel (a kernel cannot be verified without a GPU, and shipping an
-unverified one would contradict the book's own standard), and ch17 proves the tensor-parallel split
+unverified one would contradict the book's own standard), and ch19 proves the tensor-parallel split
 correct on one device and computes the collective cost rather than timing it. Both say so in a
-warning box. See PLAN.md §11 for release scoping and CHECKPOINTS.md for the tag scheme.
+warning box, as does ch30, which gives a framework-capability rubric rather than a vendor
+comparison that could not be verified here and would rot. See PLAN.md §11 for release scoping
+and CHECKPOINTS.md for the tag scheme.
+
+**Renumbering chapters is expensive and mostly machine-checked.** `myst build --strict` catches
+every broken `{ref}`, which is where the volume is; what it cannot see is `chapters/chNN_*.md`
+paths in `myst.yml` (a regex with `\b` after the digits will not match them — underscore is a
+word character) and prose "chapter NN" mentions. Renumbering also rewrites docstrings inside
+hashed modules, so it invalidates every result and costs a full regeneration.

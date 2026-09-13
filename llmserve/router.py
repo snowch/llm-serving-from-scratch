@@ -1,6 +1,6 @@
 """Routing across replicas.
 
-Chapter 18. One engine eventually runs out of device. The usual answer is to run several and put a
+Chapter 20. One engine eventually runs out of device. The usual answer is to run several and put a
 load balancer in front, and the usual load balancer is round-robin — which is wrong here in a way
 that is invisible until you measure it.
 
@@ -68,7 +68,7 @@ class PrefixAffinity(RoutingPolicy):
     Hashing a fixed-length prefix means every request beginning with the same system prompt lands
     on the replica that already has those blocks cached. This is deliberately *not* balancing: it
     trades even load for cache hits, on the bet that a hit is worth more than a slightly shorter
-    queue — which chapter 9 measured, and which chapter 18 now tests at fleet scale.
+    queue — which chapter 9 measured, and which chapter 20 now tests at fleet scale.
 
     The bet fails when one prefix dominates traffic: every request goes to one replica and the
     rest idle. Real routers therefore cap how unbalanced they will let things get.
@@ -109,7 +109,7 @@ class Router:
 
     ``step`` advances every replica once, so a fleet of N replicas does N times the work per step.
     That is the right model for independent devices and the wrong one for replicas sharing a CPU —
-    which is exactly our situation, and why chapter 18 compares policies against each other rather
+    which is exactly our situation, and why chapter 20 compares policies against each other rather
     than claiming a speedup over a single engine.
     """
 

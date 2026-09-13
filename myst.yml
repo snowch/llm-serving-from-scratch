@@ -51,34 +51,37 @@ project:
         - file: chapters/ch09_prefix_caching.md
         - file: chapters/ch10_chunked_prefill_and_scheduling_policy.md
         - file: chapters/ch11_disaggregating_prefill_and_decode.md
+        - file: chapters/ch12_offloading_the_kv_cache.md
     - title: Part IV — Making the Math Cheaper
       children:
-        - file: chapters/ch12_attention_at_speed.md
-        - file: chapters/ch13_paged_attention_kernel_in_triton.md
-        - file: chapters/ch14_quantisation_for_serving.md
-        - file: chapters/ch15_speculative_decoding.md
-        - file: chapters/ch16_constrained_and_structured_decoding.md
+        - file: chapters/ch13_attention_at_speed.md
+        - file: chapters/ch14_paged_attention_kernel_in_triton.md
+        - file: chapters/ch15_quantisation_for_serving.md
+        - file: chapters/ch16_bounding_the_context.md
+        - file: chapters/ch17_speculative_decoding.md
+        - file: chapters/ch18_constrained_and_structured_decoding.md
     - title: Part V — Scaling Out
       children:
-        - file: chapters/ch17_multi_gpu_parallelism.md
-        - file: chapters/ch18_multi_replica_routing_and_autoscaling.md
-        - file: chapters/ch19_multi_tenancy_and_lora.md
+        - file: chapters/ch19_multi_gpu_parallelism.md
+        - file: chapters/ch20_multi_replica_routing_and_autoscaling.md
+        - file: chapters/ch21_multi_tenancy_and_lora.md
     - title: Part VI — Serving Patterns by Workload
       children:
-        - file: chapters/ch20_chat_and_assistants.md
-        - file: chapters/ch21_rag_and_long_context.md
-        - file: chapters/ch22_agents_and_tool_use.md
-        - file: chapters/ch23_code_completion_and_offline_batch.md
+        - file: chapters/ch22_chat_and_assistants.md
+        - file: chapters/ch23_rag_and_long_context.md
+        - file: chapters/ch24_agents_and_tool_use.md
+        - file: chapters/ch25_code_completion_and_offline_batch.md
     - title: Part VII — Running It in Production
       children:
-        - file: chapters/ch24_the_api_surface.md
-        - file: chapters/ch25_observability_for_serving_engines.md
-        - file: chapters/ch26_reliability_and_operations.md
-        - file: chapters/ch27_cost_and_capacity_planning.md
-        - file: chapters/ch28_benchmarking_and_verifying.md
+        - file: chapters/ch26_the_api_surface.md
+        - file: chapters/ch27_observability_for_serving_engines.md
+        - file: chapters/ch28_reliability_and_operations.md
+        - file: chapters/ch29_cost_and_capacity_planning.md
+        - file: chapters/ch30_choosing_a_serving_framework.md
+        - file: chapters/ch31_benchmarking_and_verifying.md
     - title: Capstone
       children:
-        - file: chapters/ch29_the_finished_engine.md
+        - file: chapters/ch32_the_finished_engine.md
 
     - title: Appendices
       children:

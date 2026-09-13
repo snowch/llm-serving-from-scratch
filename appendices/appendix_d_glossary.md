@@ -37,7 +37,7 @@ over a request and ITL as the per-gap distribution, and this book reports percen
 distribution. ({ref}`ch02`)
 
 **E2E latency** — arrival to completion. TTFT plus the sum of every ITL. The number that matters for
-an agent step, where nothing is streamed to a human. ({ref}`ch22`)
+an agent step, where nothing is streamed to a human. ({ref}`ch24`)
 
 **Throughput** — tokens per second across all requests. A server-side measure; no individual user
 experiences it.
@@ -51,12 +51,12 @@ TTFT bound and an ITL bound. ({ref}`ch02`)
 
 **Coordinated omission** — the measurement error where a load generator waits for the server, so its
 own offered load falls when the server slows down. The queue never grows and the tail disappears.
-The reason this book's harness is open-loop. ({ref}`ch02`, {ref}`ch28`)
+The reason this book's harness is open-loop. ({ref}`ch02`, {ref}`ch31`)
 
 **Open loop / closed loop** — an open-loop generator submits on a schedule fixed before the run; a
 closed-loop one keeps N requests in flight and submits when one finishes. Closed-loop measures a
 concurrency level, not an arrival rate, and reports far better tails for the same work.
-({ref}`ch28`)
+({ref}`ch31`)
 
 ## Batching and scheduling
 
@@ -113,83 +113,83 @@ contents. Nearly free throughput on workloads with shared system prompts. ({ref}
 
 **MHA / GQA / MQA** — multi-head attention gives every query head its own KV head; grouped-query
 attention shares one KV head across a group; multi-query attention shares one across all. The KV
-cache shrinks proportionally, which is usually the point. ({ref}`ch12`)
+cache shrinks proportionally, which is usually the point. ({ref}`ch13`)
 
 **Online softmax** — computing softmax in one pass with a running maximum and a correction factor,
-rather than materialising all scores first. The mathematical core of FlashAttention. ({ref}`ch12`)
+rather than materialising all scores first. The mathematical core of FlashAttention. ({ref}`ch13`)
 
 **FlashAttention** — an IO-aware attention implementation that tiles the computation to keep
 intermediates in SRAM. It performs slightly *more* arithmetic than the naive version and is much
-faster, because it avoids writing the score matrix to HBM. ({ref}`ch12`)
+faster, because it avoids writing the score matrix to HBM. ({ref}`ch13`)
 
 ## Making it smaller and faster
 
 **Quantisation** — storing weights or the KV cache in fewer bits. Usually a memory win rather than an
-arithmetic one, since the values are often widened again before the multiply. ({ref}`ch14`)
+arithmetic one, since the values are often widened again before the multiply. ({ref}`ch15`)
 
 **Per-tensor / per-channel / grouped** — the granularity of the scale factor. Finer granularity
 costs more metadata and handles outlier channels far better; the difference is large enough to be
-the whole result. ({ref}`ch14`)
+the whole result. ({ref}`ch15`)
 
 **Speculative decoding** — a cheap drafter proposes several tokens and the target model verifies
 them in one pass. With the right acceptance rule it samples from exactly the target's distribution.
-({ref}`ch15`)
+({ref}`ch17`)
 
 **Acceptance rate** — the fraction of drafted tokens the target accepts. Decides whether speculation
-pays for itself. ({ref}`ch15`)
+pays for itself. ({ref}`ch17`)
 
 **Residual correction** — on rejection, sampling from `max(0, p_target − p_draft)` renormalised. The
 step that makes speculative decoding exact rather than approximate, and the one implementations get
-wrong. ({ref}`ch15`)
+wrong. ({ref}`ch17`)
 
 **Constrained decoding** — masking tokens that would make the output ungrammatical, so invalid
-output is unreachable rather than unlikely. Constrains shape, not length. ({ref}`ch16`)
+output is unreachable rather than unlikely. Constrains shape, not length. ({ref}`ch18`)
 
 **LoRA adapter** — a fine-tune expressed as a low-rank update to selected projections, so a tenant's
 weights are megabytes rather than gigabytes. Serving cost scales with how many *distinct* adapters
-appear in one batch. ({ref}`ch19`)
+appear in one batch. ({ref}`ch21`)
 
 **Rank / alpha** — an adapter's capacity, and the scaling that keeps its effective magnitude
-independent of that capacity. ({ref}`ch19`)
+independent of that capacity. ({ref}`ch21`)
 
 ## Scaling out
 
 **Tensor parallelism** — splitting each layer's matrices across devices, with a collective per layer.
-Bandwidth-hungry; wants NVLink. ({ref}`ch17`)
+Bandwidth-hungry; wants NVLink. ({ref}`ch19`)
 
 **Pipeline parallelism** — splitting layers across devices, with activations flowing between them.
-Cheaper on bandwidth, introduces bubbles. ({ref}`ch17`)
+Cheaper on bandwidth, introduces bubbles. ({ref}`ch19`)
 
 **Cache-aware / prefix-affinity routing** — sending requests that share a prompt prefix to the same
 replica, so its prefix cache is warm for them. Deliberately unbalances load, and wins anyway.
-({ref}`ch18`)
+({ref}`ch20`)
 
 **Least outstanding tokens** — routing by queued *work* rather than queued requests. The right
-generic policy, and on cache-heavy traffic still much worse than prefix affinity. ({ref}`ch18`)
+generic policy, and on cache-heavy traffic still much worse than prefix affinity. ({ref}`ch20`)
 
 **Cold start** — the time from starting a replica to serving a request. Dominated by weight
-transfer, which makes quantisation an availability feature. ({ref}`ch18`)
+transfer, which makes quantisation an availability feature. ({ref}`ch20`)
 
 **Deficit round robin** — the fair-queueing scheme this book uses to share an engine between tenants.
-From packet scheduling, where the problem has the same shape. ({ref}`ch19`)
+From packet scheduling, where the problem has the same shape. ({ref}`ch21`)
 
 **Noisy neighbour** — a tenant whose load degrades others sharing the same engine. Fair admission
-fixes the queue; it does not fix the shared KV cache. ({ref}`ch19`)
+fixes the queue; it does not fix the shared KV cache. ({ref}`ch21`)
 
 ## Operating it
 
 **Load shedding** — refusing requests quickly when the engine is already beyond what it can serve
-inside the SLO. Feels worse, measures better. ({ref}`ch26`)
+inside the SLO. Feels worse, measures better. ({ref}`ch28`)
 
 **Draining** — stopping new admissions while finishing in-flight work, so a deploy does not cut live
-streams. ({ref}`ch26`)
+streams. ({ref}`ch28`)
 
 **Backpressure** — signalling upstream that the server is saturated, rather than silently queueing.
 
 **Leading / lagging indicator** — queue depth rises before latency does, so it is the signal to
 autoscale and alert on. Utilisation is neither: it does not track the constraint at all.
-({ref}`ch25`)
+({ref}`ch27`)
 
 **Chat template** — the exact rendering of messages into tokens. Changing it changes the model's
 behaviour *and* the prefix cache's hit rate, and a per-request value inside it destroys the latter
-silently. ({ref}`ch24`)
+silently. ({ref}`ch26`)

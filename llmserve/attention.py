@@ -1,6 +1,6 @@
 """Attention, computed without materialising the attention matrix.
 
-Chapter 12. The standard formulation builds an ``S x N`` score matrix per head per layer, softmaxes
+Chapter 13. The standard formulation builds an ``S x N`` score matrix per head per layer, softmaxes
 it, and multiplies by V. At 32k context that matrix is larger than the model's weights, and it is
 written to memory and read back for no reason other than that softmax appears to need all its
 inputs at once.

@@ -1,4 +1,4 @@
-"""Generate the chapter 21 results: what retrieval does to an engine tuned for chat.
+"""Generate the chapter 23 results: what retrieval does to an engine tuned for chat.
 
 Run with ``python -m bench.run_rag``. Two measurements.
 

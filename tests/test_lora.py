@@ -1,4 +1,4 @@
-"""Chapter 19: low-rank adapters, and serving several of them at once."""
+"""Chapter 21: low-rank adapters, and serving several of them at once."""
 
 import pytest
 import torch

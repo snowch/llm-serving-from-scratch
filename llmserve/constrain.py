@@ -1,6 +1,6 @@
 """Constrained decoding: making invalid output impossible rather than unlikely.
 
-Chapter 16. Callers who want JSON currently get JSON *usually*. Prompting improves the odds and
+Chapter 18. Callers who want JSON currently get JSON *usually*. Prompting improves the odds and
 retrying covers some of the rest, and both are ways of paying for a guarantee you can simply have:
 at every step, mask the logits of tokens that cannot legally come next.
 
@@ -55,7 +55,7 @@ class JSONGrammar:
     """A finite-state machine over bytes, and the token masks each state implies.
 
     Masks are cached per state. Building one costs a pass over the vocabulary; doing that on every
-    decode step is the naive implementation chapter 16 measures against, and the reason
+    decode step is the naive implementation chapter 18 measures against, and the reason
     constrained decoding has a reputation for being slow.
     """
 

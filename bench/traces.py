@@ -1,6 +1,6 @@
 """Trace shapes beyond the uniform-random default.
 
-The trace is part of the measurement, not a detail of it. Chapter 21 shows that changing the
+The trace is part of the measurement, not a detail of it. Chapter 23 shows that changing the
 input/output length distribution can reverse which engine looks faster, and chapter 9 needs a
 workload where requests genuinely share text — on the default random trace, prefix caching has
 nothing to reuse and correctly does nothing.
@@ -111,7 +111,7 @@ def make_multi_tenant_trace(
 ) -> list[RequestSpec]:
     """Poisson arrivals across several tenants, each with its own system prompt.
 
-    This is the shape that makes routing policy matter (chapter 18). With a single shared prefix
+    This is the shape that makes routing policy matter (chapter 20). With a single shared prefix
     every replica warms its own copy and the policy is irrelevant. With several prefixes, a router
     that scatters them makes every replica cache every prefix, while one that keeps a prefix on a
     replica lets each cache only what it serves.
@@ -210,7 +210,7 @@ def make_rag_trace(
 ) -> list[RequestSpec]:
     """Retrieval-augmented prompts: a shared instruction, then ``top_k`` retrieved passages.
 
-    The shape that matters for chapter 21 is where requests stop being identical. Every request
+    The shape that matters for chapter 23 is where requests stop being identical. Every request
     shares the system prompt, so the first block or two are reusable. After that each request
     carries a different set of passages in a different order, so the prompt diverges — and a prefix
     cache can only reuse up to the first difference. That is why prefix caching does far less for
@@ -364,7 +364,7 @@ def make_session_turns(
     growth is the defining property of the workload — each turn's prompt is longer than the last and
     every byte of it except the newest message has been seen before.
 
-    Returned per turn rather than as a flat trace because chapter 20 measures how reuse changes
+    Returned per turn rather than as a flat trace because chapter 22 measures how reuse changes
     *with depth*, which means serving all of turn 1, then all of turn 2, and so on.
     """
     rng = np.random.default_rng(seed)

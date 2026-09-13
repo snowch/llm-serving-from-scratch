@@ -1,0 +1,184 @@
+{
+  "engine": "window",
+  "generated_at": "2026-09-13T21:29:25+00:00",
+  "hardware": {
+    "platform": "Linux-6.18.44-fc-v24-x86_64-with-glibc2.39",
+    "machine": "x86_64",
+    "processor": "x86_64",
+    "cpu_count": 4,
+    "device": "cpu"
+  },
+  "model": {
+    "name": "TinyGPT, trained on the synthetic corpus",
+    "params": 5838080,
+    "vocab_size": 260,
+    "n_layers": 6,
+    "n_heads": 8,
+    "n_kv_heads": 2,
+    "head_dim": 32,
+    "ffn_mult": 4,
+    "max_seq_len": 2048,
+    "rope_theta": 10000.0,
+    "norm_eps": 1e-05,
+    "dtype": "fp32",
+    "seed": 0
+  },
+  "versions": {
+    "python": "3.11.15",
+    "torch": "2.14.0+cu130",
+    "numpy": "2.4.6"
+  },
+  "code_fingerprint": "53c62ebf2600ce69",
+  "code_sources": [
+    "llmserve/cache/window.py",
+    "bench/train_tiny.py"
+  ],
+  "conditions": {
+    "trace": "held-out text decoded one token at a time, at 768 and 3072 tokens against a 2048-token context",
+    "train_steps": 400,
+    "max_seq_len": 2048,
+    "train_seq_len": 128,
+    "window": 64,
+    "sinks": 4
+  },
+  "summary": {
+    "quality": [
+      {
+        "regime": "inside the training sequence length",
+        "tokens": 128,
+        "configuration": "Full context",
+        "window": null,
+        "sinks": null,
+        "kv_tokens": 128,
+        "perplexity": 1.8921,
+        "change": 0.0
+      },
+      {
+        "regime": "inside the training sequence length",
+        "tokens": 128,
+        "configuration": "Sliding window 64, no sinks",
+        "window": 64,
+        "sinks": 0,
+        "kv_tokens": 64,
+        "perplexity": 1.8878,
+        "change": -0.0023
+      },
+      {
+        "regime": "inside the training sequence length",
+        "tokens": 128,
+        "configuration": "Window 64 + 4 sinks",
+        "window": 64,
+        "sinks": 4,
+        "kv_tokens": 68,
+        "perplexity": 1.8862,
+        "change": -0.0031
+      },
+      {
+        "regime": "past it, inside the rotary table",
+        "tokens": 768,
+        "configuration": "Full context",
+        "window": null,
+        "sinks": null,
+        "kv_tokens": 768,
+        "perplexity": 4.0706,
+        "change": 0.0
+      },
+      {
+        "regime": "past it, inside the rotary table",
+        "tokens": 768,
+        "configuration": "Sliding window 64, no sinks",
+        "window": 64,
+        "sinks": 0,
+        "kv_tokens": 64,
+        "perplexity": 1.7693,
+        "change": -0.5653
+      },
+      {
+        "regime": "past it, inside the rotary table",
+        "tokens": 768,
+        "configuration": "Window 64 + 4 sinks",
+        "window": 64,
+        "sinks": 4,
+        "kv_tokens": 68,
+        "perplexity": 1.7715,
+        "change": -0.5648
+      },
+      {
+        "regime": "past the rotary table",
+        "tokens": 3072,
+        "configuration": "Full context",
+        "window": null,
+        "sinks": null,
+        "kv_tokens": 3072,
+        "perplexity": null,
+        "change": null,
+        "failed": "position past the trained context has no rotary embedding"
+      },
+      {
+        "regime": "past the rotary table",
+        "tokens": 3072,
+        "configuration": "Sliding window 64, no sinks",
+        "window": 64,
+        "sinks": 0,
+        "kv_tokens": 64,
+        "perplexity": null,
+        "change": null,
+        "failed": "position past the trained context has no rotary embedding"
+      },
+      {
+        "regime": "past the rotary table",
+        "tokens": 3072,
+        "configuration": "Window 64 + 4 sinks",
+        "window": 64,
+        "sinks": 4,
+        "kv_tokens": 68,
+        "perplexity": null,
+        "change": null,
+        "failed": "position past the trained context has no rotary embedding"
+      }
+    ],
+    "sinks": {
+      "first_tokens": 4,
+      "per_layer_mass": [
+        0.0641,
+        0.1126,
+        0.0387,
+        0.0127,
+        0.0345,
+        0.0962
+      ],
+      "mean_mass": 0.0598,
+      "uniform_share": 0.0052
+    },
+    "memory": [
+      {
+        "context": 2048,
+        "full_bytes": 268435456,
+        "bounded_bytes": 268435456,
+        "sequences_in_40gb_full": 149,
+        "sequences_in_40gb_bounded": 149
+      },
+      {
+        "context": 8192,
+        "full_bytes": 1073741824,
+        "bounded_bytes": 537395200,
+        "sequences_in_40gb_full": 37,
+        "sequences_in_40gb_bounded": 74
+      },
+      {
+        "context": 32768,
+        "full_bytes": 4294967296,
+        "bounded_bytes": 537395200,
+        "sequences_in_40gb_full": 9,
+        "sequences_in_40gb_bounded": 74
+      },
+      {
+        "context": 131072,
+        "full_bytes": 17179869184,
+        "bounded_bytes": 537395200,
+        "sequences_in_40gb_full": 2,
+        "sequences_in_40gb_bounded": 74
+      }
+    ]
+  }
+}

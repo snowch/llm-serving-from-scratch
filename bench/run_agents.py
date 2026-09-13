@@ -1,4 +1,4 @@
-"""Generate the chapter 22 results: agent traffic, chained latency, and abandoned work.
+"""Generate the chapter 24 results: agent traffic, chained latency, and abandoned work.
 
 Run with ``python -m bench.run_agents``. Three measurements.
 

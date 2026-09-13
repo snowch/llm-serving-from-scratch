@@ -1,4 +1,4 @@
-"""Chapter 15: speculation must be fast *and* produce the target model's distribution."""
+"""Chapter 17: speculation must be fast *and* produce the target model's distribution."""
 
 import pytest
 import torch

@@ -124,7 +124,7 @@ class PagedKVCache:
 
         ``k`` and ``v`` are [n_kv_heads, n_tokens, head_dim]. Tokens are placed one at a time
         because a run may straddle a block boundary; a real kernel does this with a scatter, which
-        is what chapter 13 writes.
+        is what chapter 14 writes.
         """
         for i in range(k.shape[1]):
             position = start + i
@@ -139,7 +139,7 @@ class PagedKVCache:
         """Materialise a sequence's cache as contiguous [1, n_kv_heads, length, head_dim].
 
         Deliberately the simplest thing that works, and deliberately wasteful: it copies the whole
-        cache on every step. Chapter 13 replaces it with a kernel that reads the blocks in place.
+        cache on every step. Chapter 14 replaces it with a kernel that reads the blocks in place.
         """
         n_blocks = self.allocator.blocks_needed(length)
         used = block_table[:n_blocks]

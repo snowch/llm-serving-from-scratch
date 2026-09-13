@@ -1,4 +1,4 @@
-"""Generate the chapter 18 results: routing policy across a fleet of replicas.
+"""Generate the chapter 20 results: routing policy across a fleet of replicas.
 
 Run with ``python -m bench.run_routing``. Policies are compared against each other, never against
 a single engine: our replicas share one CPU, so a fleet is not faster than one engine here and any

@@ -172,9 +172,15 @@ def test_the_chapter_order_comes_from_the_table_of_contents():
     front, parts = build_pdf.load_structure(pages)
     assert front is not None and front.slug == "index"
     assert [part.title for part in parts][0].startswith("Part I")
-    assert sum(len(part.pages) for part in parts) == 34
+    # Counted from the table of contents rather than hardcoded: this assertion exists to catch a
+    # page the PDF *dropped*, and a literal would only catch the day somebody adds a chapter.
+    import yaml
+
+    toc = yaml.safe_load((ROOT / "myst.yml").read_text())["project"]["toc"]
+    listed = sum(len(entry.get("children") or []) for entry in toc if "title" in entry)
+    assert sum(len(part.pages) for part in parts) == listed
     assert parts[0].pages[0].slug.startswith("ch01")
 
 
 def test_titles_are_plain_text_for_the_contents_list():
-    assert build_pdf.strip_tags("<strong>ch18</strong> &middot; Routing") == "ch18 · Routing"
+    assert build_pdf.strip_tags("<strong>ch20</strong> &middot; Routing") == "ch20 · Routing"

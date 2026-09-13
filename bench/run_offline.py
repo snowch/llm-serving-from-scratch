@@ -1,4 +1,4 @@
-"""Generate the chapter 23 results: the two extremes of the latency/throughput axis.
+"""Generate the chapter 25 results: the two extremes of the latency/throughput axis.
 
 Run with ``python -m bench.run_offline``. Code completion and offline batch are the same engine
 serving requests of similar size, and almost every configuration choice comes out opposite.

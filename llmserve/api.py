@@ -1,4 +1,4 @@
-"""Chapter 24: the surface a caller actually touches.
+"""Chapter 26: the surface a caller actually touches.
 
 Everything before this chapter is the engine. This is the layer between it and an HTTP client, and
 it is where a surprising share of production incidents live — not because it is hard, but because
@@ -79,7 +79,7 @@ class CompletionRequest:
     stream: bool = False
     stop: tuple[str, ...] = ()
     model: str = "llmserve-tiny"
-    #: which tenant this belongs to (chapter 19), from the API key rather than the body
+    #: which tenant this belongs to (chapter 21), from the API key rather than the body
     tenant: str | None = None
 
     def prompt(self, template: ChatTemplate = DEFAULT_TEMPLATE) -> str:

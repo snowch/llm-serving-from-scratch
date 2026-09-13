@@ -1,4 +1,4 @@
-"""Chapter 17: splitting a model across devices, and getting the same answer."""
+"""Chapter 19: splitting a model across devices, and getting the same answer."""
 
 import pytest
 import torch

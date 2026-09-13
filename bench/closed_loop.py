@@ -1,4 +1,4 @@
-"""A closed-loop load generator, built only so chapter 28 can show why it is the wrong one.
+"""A closed-loop load generator, built only so chapter 31 can show why it is the wrong one.
 
 Chapter 2 chose an open loop and explained the reasoning. This is the alternative, implemented
 faithfully rather than as a straw man: a fixed number of workers, each submitting one request,

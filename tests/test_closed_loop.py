@@ -1,4 +1,4 @@
-"""Chapter 28: the load generator is part of the measurement."""
+"""Chapter 31: the load generator is part of the measurement."""
 
 import pytest
 import torch

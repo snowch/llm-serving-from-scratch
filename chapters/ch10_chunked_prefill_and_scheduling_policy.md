@@ -133,7 +133,7 @@ The practical consequence is that a token budget has to be *tuned*, on the workl
 default in any engine is a guess about a length distribution. Our trace is deliberately harsh —
 35% of requests carry a 1536-token prompt, so a prefill is almost always in flight and there is
 little quiet time to spread work into — and even here a moderate budget wins. On a workload with
-occasional long prompts among many short ones, the margin is larger; {ref}`ch21` measures it on
+occasional long prompts among many short ones, the margin is larger; {ref}`ch23` measures it on
 retrieval traffic, where the prompts are long and the arrival rate decides the answer.
 
 ## The cost

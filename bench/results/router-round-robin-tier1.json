@@ -1,6 +1,6 @@
 {
   "engine": "router-round-robin",
-  "generated_at": "2026-09-13T19:09:24+00:00",
+  "generated_at": "2026-09-13T20:51:23+00:00",
   "hardware": {
     "platform": "Linux-6.18.44-fc-v24-x86_64-with-glibc2.39",
     "machine": "x86_64",
@@ -28,7 +28,7 @@
     "torch": "2.14.0+cu130",
     "numpy": "2.4.6"
   },
-  "code_fingerprint": "1630e9e4844ebd82",
+  "code_fingerprint": "77c52a922c235ab5",
   "code_sources": [
     "llmserve/engines/paged.py",
     "llmserve/engines/prefix.py",
@@ -57,15 +57,15 @@
   "summary": {
     "requests": 24,
     "completed": 24,
-    "ttft_p50": 0.3471,
-    "ttft_p95": 0.7045,
-    "ttft_p99": 0.7045,
-    "itl_p50": 0.1152,
-    "itl_p95": 0.1711,
-    "output_tokens_per_second": 117.0,
-    "requests_per_second": 4.603,
+    "ttft_p50": 0.4045,
+    "ttft_p95": 0.6846,
+    "ttft_p99": 0.6846,
+    "itl_p50": 0.2587,
+    "itl_p95": 0.3197,
+    "output_tokens_per_second": 68.36,
+    "requests_per_second": 2.69,
     "goodput_per_second": 0.0,
     "goodput_fraction": 0.0,
-    "wall_time": 5.214
+    "wall_time": 8.923
   }
 }

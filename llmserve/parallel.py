@@ -1,4 +1,4 @@
-"""Chapter 17: splitting one model across several devices.
+"""Chapter 19: splitting one model across several devices.
 
 A model that does not fit on one accelerator has to be split, and there are two ways to cut it.
 **Tensor parallelism** cuts each layer's matrices across devices, so every device holds a slice of
@@ -153,7 +153,7 @@ def max_tensor_parallel_shards(model: ModelConfig) -> int:
     """The largest split the model's shape allows.
 
     Attention is split by head, so a device must get whole heads — and with grouped-query attention
-    (chapter 12) the binding constraint is the *key/value* head count, which is much smaller than
+    (chapter 13) the binding constraint is the *key/value* head count, which is much smaller than
     the query head count. A model with 8 KV heads cannot be split 16 ways however large it is, and
     that is a surprisingly common wall to hit.
     """

@@ -1,4 +1,4 @@
-"""Chapter 22's engine: a request the caller no longer wants.
+"""Chapter 24's engine: a request the caller no longer wants.
 
 Every engine so far assumed a request runs to completion. Agent workloads break that assumption
 constantly — a step is abandoned because a parallel branch answered first, a timeout fired, a user

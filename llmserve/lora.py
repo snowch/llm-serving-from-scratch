@@ -1,6 +1,6 @@
 """Low-rank adapters, and what it costs to serve many of them at once.
 
-Chapter 19. A tenant wants a model fine-tuned on their data. Giving each tenant a full copy of the
+Chapter 21. A tenant wants a model fine-tuned on their data. Giving each tenant a full copy of the
 weights is the obvious implementation and is immediately unaffordable: at production scale one copy
 is tens of gigabytes, and the whole point of a shared serving fleet is that tenants share the
 expensive part.
@@ -95,7 +95,7 @@ class LoRALinear(nn.Module):
     The single-adapter path is one extra pair of small matrix multiplies and is essentially free.
     The mixed path is the interesting one, and it is deliberately written as the naive loop so the
     cost is visible: rows are grouped by adapter and each group takes its own pass. That loop is
-    what S-LoRA and Punica exist to replace with a batched kernel, and chapter 19 measures what it
+    what S-LoRA and Punica exist to replace with a batched kernel, and chapter 21 measures what it
     costs before reaching for one.
     """
 
@@ -199,7 +199,7 @@ def merge(layers: dict[str, LoRALinear], name: str) -> None:
 def adapter_bytes(model: ModelConfig, config: LoRAConfig, n_layers: int | None = None) -> float:
     """Bytes one adapter occupies, from the shapes alone.
 
-    Separate from :meth:`LoRAAdapter.n_bytes` because chapter 19 needs this for model sizes it
+    Separate from :meth:`LoRAAdapter.n_bytes` because chapter 21 needs this for model sizes it
     cannot build — the argument for LoRA is strongest exactly where the base model does not fit on
     a laptop.
     """

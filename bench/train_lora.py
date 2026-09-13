@@ -1,11 +1,11 @@
-"""Train per-tenant adapters, so chapter 19 can show that an adapter actually does something.
+"""Train per-tenant adapters, so chapter 21 can show that an adapter actually does something.
 
 An untrained adapter is the identity by construction, which makes it useless as evidence: you
 cannot tell a working multi-adapter server from a broken one if every adapter is a no-op. So each
 tenant gets its own corpus and its own brief training run, and the chapter then checks the thing
 that matters — that an adapter helps *its own* tenant's text and not the other tenant's.
 
-Each tenant's corpus comes from a different seed of the chapter 14 word process, which gives a
+Each tenant's corpus comes from a different seed of the chapter 15 word process, which gives a
 genuinely different vocabulary over the same syllable inventory. That is the right shape for this
 measurement: the tenants' domains are distinct but related, as two customers of one base model
 would be, rather than two unrelated languages that a single adapter could never span.
@@ -20,7 +20,7 @@ from bench.train_tiny import evaluate_perplexity, make_corpus
 from llmserve.lora import LoRAAdapter, LoRALinear, attach, make_adapter, set_active
 from llmserve.model import TinyGPT
 
-#: Seeds for the tenant corpora. Seed 0 is the base model's own corpus (chapter 14), so tenants
+#: Seeds for the tenant corpora. Seed 0 is the base model's own corpus (chapter 15), so tenants
 #: start at 1: an adapter trained on the data the base already saw would show nothing.
 TENANT_SEEDS = {"alice": 1, "bob": 2}
 

@@ -1,4 +1,4 @@
-"""Generate the chapter 20 results: what changes when the workload is a conversation.
+"""Generate the chapter 22 results: what changes when the workload is a conversation.
 
 Run with ``python -m bench.run_chat_patterns``. Two measurements.
 

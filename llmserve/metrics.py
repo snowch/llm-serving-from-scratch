@@ -1,4 +1,4 @@
-"""Chapter 25: the signals that explain a serving engine.
+"""Chapter 27: the signals that explain a serving engine.
 
 Host metrics tell you the machine is busy. They cannot tell you *why* a request was slow, because
 the thing that made it slow — it waited behind a prefill, it was preempted, it missed the prefix
@@ -136,7 +136,7 @@ def leading_indicator_windows(
 ) -> list[dict]:
     """Summarise the run in windows, so a signal's *timing* can be compared against another's.
 
-    The claim chapter 25 tests is that queue depth moves before latency does. Testing it needs both
+    The claim chapter 27 tests is that queue depth moves before latency does. Testing it needs both
     series on the same time axis and at a resolution finer than a scrape interval, which is why the
     engine samples itself rather than waiting to be asked.
     """

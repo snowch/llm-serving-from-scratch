@@ -1,4 +1,4 @@
-"""Chapter 19's engine: one base model, many tenants, and a queue that is fair about it.
+"""Chapter 21's engine: one base model, many tenants, and a queue that is fair about it.
 
 Everything before this chapter treated the waiting queue as a single line and served it in order.
 That is exactly right when every request belongs to the same caller and exactly wrong when they do

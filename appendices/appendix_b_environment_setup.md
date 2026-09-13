@@ -28,9 +28,9 @@ chapters need more.
 
 | Tier | Hardware | What it runs |
 |---|---|---|
-| **1** | Any laptop, CPU only | Everything except {ref}`ch13` and {ref}`ch17`. Every committed number in this book was measured here. |
-| **2** | One GPU (24 GB consumer card, or a cloud L4/A10G) | Adds {ref}`ch13`'s Triton kernel and lets you re-measure Parts II–III at realistic scale. |
-| **3** | Two or more GPUs, rented hourly | Adds {ref}`ch17`'s tensor and pipeline parallelism. |
+| **1** | Any laptop, CPU only | Everything except {ref}`ch14` and {ref}`ch19`. Every committed number in this book was measured here. |
+| **2** | One GPU (24 GB consumer card, or a cloud L4/A10G) | Adds {ref}`ch14`'s Triton kernel and lets you re-measure Parts II–III at realistic scale. |
+| **3** | Two or more GPUs, rented hourly | Adds {ref}`ch19`'s tensor and pipeline parallelism. |
 
 **Tier 1 is the default and not a compromise.** The reference model is built from code with seeded
 random weights, so it runs anywhere and needs no download; and every mechanism in Parts II–VII
@@ -38,7 +38,7 @@ shows its effect at that scale, because the effects are structural rather than a
 size. What Tier 1 cannot show is anything that depends on a real memory hierarchy or a real
 interconnect, which is precisely the two chapters it excludes.
 
-Tier 3's cost, if you rent: an {ref}`ch17` reproduction is under an hour of work on a two-GPU
+Tier 3's cost, if you rent: an {ref}`ch19` reproduction is under an hour of work on a two-GPU
 instance, so it is a single-digit-dollar exercise at current spot prices. Check before you start;
 that sentence ages badly and this book will not know.
 
@@ -92,14 +92,14 @@ There are none in this repository, and none are downloaded on the Tier 1 path.
 
 This is a design decision with a cost, and it is worth being explicit about both halves. The cost is
 that the reference model is small and its outputs are not meaningful text, so nothing in this book
-can show you a quality result from the serving model itself — where quality matters ({ref}`ch14`,
-{ref}`ch15`, {ref}`ch19`) the book trains a small model on a synthetic corpus first, and says so
+can show you a quality result from the serving model itself — where quality matters ({ref}`ch15`,
+{ref}`ch17`, {ref}`ch21`) the book trains a small model on a synthetic corpus first, and says so
 each time.
 
 What it buys is that every measurement in the book reproduces on any machine, in any network
 environment, with no account, no token and no licence acceptance. A book whose first chapter fails
 behind a corporate proxy is a book nobody finishes.
 
-To serve a real model instead, point {ref}`ch28`'s harness at any OpenAI-compatible endpoint — the
+To serve a real model instead, point {ref}`ch31`'s harness at any OpenAI-compatible endpoint — the
 comparison methodology there is deliberately engine-agnostic, and that is the intended path from
 this engine to a production one.

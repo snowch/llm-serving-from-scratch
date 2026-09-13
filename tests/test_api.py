@@ -1,4 +1,4 @@
-"""Chapter 24: the layer between a client and the engine."""
+"""Chapter 26: the layer between a client and the engine."""
 
 import json
 
@@ -43,7 +43,7 @@ def test_the_same_messages_render_to_the_same_bytes():
 
 
 def test_a_changing_system_prompt_changes_the_prefix():
-    """The silent failure chapter 24 measures: a per-request value destroys the shared prefix."""
+    """The silent failure chapter 26 measures: a per-request value destroys the shared prefix."""
     stable = DEFAULT_TEMPLATE.render(_messages())
     stamped = DEFAULT_TEMPLATE.render(_messages(system="12:01 You are helpful."))
     shared = 0
@@ -73,7 +73,7 @@ def test_a_completion_request_becomes_an_engine_request(tokenizer):
 
 
 def test_the_tenant_comes_from_the_key_not_the_body(tokenizer):
-    """Chapter 19 needs a tenant; letting the request body assert one is how you get impersonation."""
+    """Chapter 21 needs a tenant; letting the request body assert one is how you get impersonation."""
     completion = CompletionRequest(messages=_messages(), tenant="acme")
     assert completion.to_engine_request(tokenizer).tenant == "acme"
 
