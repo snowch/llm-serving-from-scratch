@@ -4,7 +4,7 @@ short_title: "ch03 The Arithmetic of Inference"
 ---
 
 (ch03)=
-# ch03 · The Arithmetic of Inference [DRAFT]
+# ch03 · The Arithmetic of Inference
 
 :::{note} Chapter header
 :class: dropdown
@@ -13,57 +13,161 @@ short_title: "ch03 The Arithmetic of Inference"
 |---|---|
 | **Tier** | Tier 1 — CPU (any laptop) |
 | **Prerequisites** | [ch01](#ch01), [ch02](#ch02) |
-| **Scorecard** | No engine change — this chapter makes every later row **predictable in advance**. |
+| **Scorecard** | No engine change. Makes every later row **predictable in advance**. |
 :::
 
 ## The problem
 
-The ch02 numbers are facts without explanation. Without a model of *why* they are what they are, every optimisation is guesswork.
+Chapter 2 established that the naive engine saturates at a particular throughput. It did not
+explain why that number, rather than one ten times higher or lower.
 
-[To write: open with the measurement from the previous chapter that is unacceptable. Show it,
-do not assert it.]
+Without a model of where the time goes, every optimisation is guesswork — and guesswork in this
+field is expensive, because the obvious answer is usually wrong. The rest of this book is a
+sequence of specific interventions, and you should be able to predict roughly what each will buy
+before implementing it.
 
 ## The idea
 
-- FLOPs per token (~`2 x params`) vs bytes moved per token; arithmetic intensity and the roofline
-- **Prefill is compute-bound. Decode is memory-bandwidth-bound.** The book's central claim (PLAN.md §3.1)
-- Derive the single-stream decode ceiling: roughly `HBM bandwidth / bytes read per forward pass`
-- Derive KV cache per token: `2 x n_layers x n_kv_heads x head_dim x bytes_per_element`
+### Two operations, two different bottlenecks
 
-[To write: develop the mechanism from first principles, with the arithmetic that predicts the
-result.]
+Recall the split from {ref}`ch01`. Prefill processes the whole prompt at once; decode produces one
+token at a time. The crucial fact is that these are limited by *different resources*.
+
+**Prefill is compute-bound.** The prompt's tokens all exist already, so they go through the model
+together as a matrix multiplication with plenty of parallel work. The cost is roughly
+`2 × params` FLOPs per prompt token — one multiply and one add per parameter.
+
+**Decode is memory-bandwidth-bound.** To produce a single token, the model must read every one of
+its weights out of memory, and then does barely any arithmetic with each. The work is trivial;
+the data movement is not. Decode speed is therefore set by how fast the device can stream weights,
+not by how fast it can multiply.
+
+That asymmetry explains almost everything that follows, so it is worth stating as a rule:
+
+> Prefill is limited by FLOPs. Decode is limited by bytes moved.
+
+Two consequences that will keep recurring:
+
+- Making decode faster usually means **moving fewer bytes** — smaller weights ({ref}`ch14`),
+  a smaller KV cache ({ref}`ch12`), or reading the same weights for more sequences at once
+  ({ref}`ch07`).
+- Adding sequences to a decode batch is nearly free. The weights are read once per step whatever
+  the batch size, so the second sequence costs only its own KV cache. **This is the single most
+  important economic fact in LLM serving**, and continuous batching exists to exploit it.
+
+### The two formulas worth memorising
+
+**KV cache per token.** Each token's keys and values are stored for every layer:
+
+```
+kv_bytes_per_token = 2 × n_layers × n_kv_heads × head_dim × bytes_per_element
+```
+
+The 2 is for K and V. Note `n_kv_heads`, not `n_heads` — grouped-query attention shrinks this
+term directly, which is why every modern model uses it.
+
+**The decode ceiling.** Per step the device must read the weights, plus the KV cache of every
+sequence in the batch:
+
+```
+decode_tok_per_s ≤ bandwidth / (weight_bytes + kv_bytes_per_token × context × batch)
+```
+
+No kernel beats this. It is a ceiling, not a forecast.
 
 ## The build
 
-- A small calculator module: given a model config and a device, predict decode tok/s and KV bytes/token
-- Apply it to the book's reference models, and to one 7B and one 70B model for scale
+Both formulas, written out so predictions cannot drift from the model they describe — the same
+`ModelConfig` object builds the model and feeds the arithmetic:
 
-[To write: incremental implementation. Quote code from `llmserve/` with `{literalinclude}`
-and `:start-at:` / `:end-at:` anchors — never paste it inline.]
+```{literalinclude} ../llmserve/arithmetic.py
+:language: python
+:start-at: def kv_bytes_per_token
+:end-before: def kv_bytes_for
+```
+
+```{literalinclude} ../llmserve/arithmetic.py
+:language: python
+:start-at: def decode_bytes_per_step
+:end-before: def decode_ceiling_tokens_per_second
+```
+
+That the prediction and the model share a source is worth more than it looks: a test asserts that
+the predicted parameter count equals the built model's, so the arithmetic cannot quietly describe
+a model we are not running.
 
 ## The measurement
 
-**Predict** ch01's throughput from arithmetic alone, then compare to the measured value. Explain the gap.
+Apply it to the reference model, then check it against chapter 2's measurements:
 
-[To write: re-run the harness, append the scorecard row, and explain in one paragraph why the
-number moved. Read the figures from `bench/results/` — never type a number into prose
-(PLAN.md §6.3).]
+```{include} _generated/ch03-arithmetic.md
+```
+
+Three things to take from that table.
+
+**The KV cache is small here, and that is a property of this model, not of serving.** Weights are
+98.8% of the bytes read per decode step. Scale to a 7B model in fp16 and the picture inverts at
+long context: weights are fixed at about 14 GB, while KV grows with every token of every
+concurrent sequence. That crossover is why Part III is mostly about memory.
+
+**The implied bandwidth is a useful number to keep.** Dividing bytes-per-step by measured
+time-per-token gives roughly 5 GB/s achieved on this machine. That figure now predicts things —
+{ref}`ch06` uses it to forecast batched throughput before implementing batching.
+
+**The FLOPs model over-predicts by an order of magnitude, and the last two rows of that table are
+the most instructive lines in this chapter.** Counting arithmetic alone, removing the KV cache
+should be enormously expensive: without one, generating token *n* redoes all *n* previous tokens.
+Measured, the penalty is a small single-digit factor.
+
+The explanation is the rule above. At this model size, a decode step is dominated by reading 23 MB
+of weights, and that cost is paid whether we process one token or ninety-six. The extra arithmetic
+rides along in time the machine was spending on memory anyway. The FLOPs model counted the work;
+it did not count what was actually scarce.
+
+This is worth dwelling on because it generalises. Any optimisation that reduces FLOPs without
+reducing bytes moved will disappoint you during decode. Most of the ones that work in this book —
+batching, quantisation, GQA, prefix caching — reduce bytes, or amortise them over more useful
+output.
 
 ## The cost
 
-A model, not the truth. Name what it ignores (kernel launch overhead, attention cost growth, memory-allocator behaviour) so the reader is not surprised when it is 20% off.
+The arithmetic is a model, and it ignores:
 
-[To write: what did this make worse? Complexity, latency variance, quality, memory, operational
-burden. This section is mandatory — the chapter is not done without it (PLAN.md §12.3).]
+- **Attention's quadratic term.** Fine at 96 tokens, badly wrong at 32k. {ref}`ch21` is where this
+  stops being safe.
+- **Kernel launch and framework overhead.** At this model size a meaningful share of each step is
+  Python and dispatch, not memory traffic. That is one reason the predicted penalty did not
+  materialise.
+- **Cache hierarchy.** "Bandwidth" is one number standing in for registers, several cache levels
+  and DRAM, each an order of magnitude apart.
+- **Everything except the model.** Tokenisation, scheduling and HTTP are all invisible here.
+
+Use it to predict orders of magnitude and to decide which of two optimisations is worth trying.
+Do not use it to predict a percentage. Then measure, and when the measurement disagrees, the
+disagreement is the interesting part — as it was above.
 
 ## Key takeaways
 
-- [To write: 3–5 bullets, each a claim the chapter earned.]
+- **Prefill is compute-bound; decode is memory-bandwidth-bound.** Every technique in this book
+  attacks one of those two, and knowing which tells you when it will help.
+- KV cache per token is `2 × n_layers × n_kv_heads × head_dim × bytes`. It is the budget all of
+  Part III competes over.
+- Decode throughput is bounded by `bandwidth / bytes read per step`. Weights are read once per
+  step regardless of batch size, which is why batching is close to free and why {ref}`ch07` works.
+- A FLOPs count predicts prefill reasonably and decode badly. When the two disagree, the scarce
+  resource is bytes, not arithmetic.
 
 ## Looking ahead
 
-[To write: the transition that sets up the next chapter's problem.]
+We can now predict, measure, and explain the gap. Time to fix something. {ref}`ch04` takes
+ownership of the decode loop itself — sampling, stop conditions, and the streaming-detokenisation
+bug that makes non-ASCII output look like model corruption — so that every optimisation afterwards
+can be tested for producing identical output.
 
 ## Further reading
 
-[To write: primary sources, cited with MyST citation syntax against `references.bib`.]
+The roofline model is the general form of the argument here, and reading the original Williams,
+Waterman and Patterson paper will make the prefill/decode split feel inevitable rather than
+particular to transformers. For the same arithmetic applied to production-scale models, the
+FlashAttention paper (Appendix E) opens with an unusually clear statement of why attention is
+IO-bound rather than compute-bound.

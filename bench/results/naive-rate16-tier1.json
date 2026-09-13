@@ -1,0 +1,57 @@
+{
+  "engine": "naive",
+  "generated_at": "2026-09-13T15:28:25+00:00",
+  "hardware": {
+    "platform": "Linux-6.18.44-fc-v24-x86_64-with-glibc2.39",
+    "machine": "x86_64",
+    "processor": "x86_64",
+    "cpu_count": 4,
+    "device": "cpu"
+  },
+  "model": {
+    "name": "TinyGPT (reference, random weights)",
+    "params": 5838080,
+    "vocab_size": 260,
+    "n_layers": 6,
+    "n_heads": 8,
+    "n_kv_heads": 2,
+    "head_dim": 32,
+    "ffn_mult": 4,
+    "max_seq_len": 2048,
+    "rope_theta": 10000.0,
+    "norm_eps": 1e-05,
+    "dtype": "fp32",
+    "seed": 0
+  },
+  "versions": {
+    "python": "3.11.15",
+    "torch": "2.14.0+cu130",
+    "numpy": "2.4.6"
+  },
+  "code_fingerprint": "8e09f9c6ae4cdf17",
+  "engine_module": "llmserve/engines/naive.py",
+  "conditions": {
+    "rate_per_second": 16.0,
+    "slo": {
+      "ttft_seconds": 1.0,
+      "itl_seconds": 0.05
+    },
+    "trace": "poisson, prompt 32-96, output 16-48, seed 7",
+    "n_requests": 24,
+    "torch_threads": 4
+  },
+  "summary": {
+    "requests": 24,
+    "completed": 24,
+    "ttft_p50": 4.8114,
+    "ttft_p95": 8.4629,
+    "ttft_p99": 8.9183,
+    "itl_p50": 0.0137,
+    "itl_p95": 0.0149,
+    "output_tokens_per_second": 74.49,
+    "requests_per_second": 2.215,
+    "goodput_per_second": 0.277,
+    "goodput_fraction": 0.125,
+    "wall_time": 10.834
+  }
+}

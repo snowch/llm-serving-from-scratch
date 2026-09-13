@@ -1,81 +1,102 @@
 #!/usr/bin/env python3
-"""Guard against stale benchmark numbers (PLAN.md §6.3).
+"""Guard against unstamped, stale and hand-typed numbers (PLAN.md §6.3).
 
-Every number quoted in the book must come from a committed result file in ``bench/results/``.
-This script enforces two rules:
+Every figure in the book comes from a result file in ``bench/results/``, rendered into a fragment
+under ``chapters/_generated/`` by ``scripts/render-scorecards.py``. Four rules, so a wrong number
+fails the build rather than reaching a reader:
 
-1. A chapter that names a result file must name one that exists.
-2. A result file must not be older than the engine code it claims to measure — otherwise a
-   library upgrade or a code change can silently leave a stale figure in the published book.
+1. Every result a scorecard cites exists.
+2. Every such result carries its stamps — model, hardware, versions, date. A performance number
+   whose conditions are unknown cannot be checked by anyone, including us in six months.
+3. Every result was produced by the code that is checked in. This is a **content hash** over the
+   shared core plus the engine module that generated it. An earlier version compared commit
+   times, which cannot tell an unrelated new file apart from a change to the thing being measured
+   and was wrong in both directions: it marked every result stale when any file under
+   ``llmserve/`` changed, and it could not see a change committed alongside the results.
+4. No measured figure is typed into chapter prose, where regenerating results would silently
+   invalidate it.
 
-Exits non-zero on any violation so CI fails loudly rather than publishing a wrong number.
+Fragment freshness is checked separately by ``render-scorecards.py --check``.
 """
 
 from __future__ import annotations
 
 import json
 import re
-import subprocess
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
+
+from bench.harness import code_fingerprint  # noqa: E402
+from bench.scorecards import CONDITIONS, SCORECARDS  # noqa: E402
+
 RESULTS = ROOT / "bench" / "results"
-CODE_DIRS = ["llmserve", "bench"]
+REQUIRED_STAMPS = ("model", "hardware", "generated_at", "versions", "summary")
 
-# Chapters reference results as: bench/results/<something>.json
-REF = re.compile(r"bench/results/([\w.\-]+\.json)")
+#: A decimal followed by a multiplier or a unit is almost always a measured figure, and measured
+#: figures belong in a generated fragment. Integers are allowed, so "2 x n_layers" in a formula
+#: is fine.
+HARDCODED_FIGURE = re.compile(r"\b\d+\.\d+\s*(?:[x×]|ms\b|s\b|GB/s\b|tok/s\b)")
 
 
-def git_epoch(path: str) -> int:
-    """Last commit time for a path, or 0 if it has never been committed."""
-    out = subprocess.run(
-        ["git", "log", "-1", "--format=%ct", "--", path],
-        cwd=ROOT,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    return int(out.stdout.strip() or 0)
+def cited_results() -> set[str]:
+    names = {name for rows in SCORECARDS.values() for _, name in rows}
+    return names | set(CONDITIONS.values())
+
+
+def check_results(problems: list[str]) -> None:
+    for name in sorted(cited_results()):
+        path = RESULTS / f"{name}.json"
+        if not path.exists():
+            problems.append(f"missing result: bench/results/{name}.json (cited by a scorecard)")
+            continue
+        try:
+            payload = json.loads(path.read_text())
+        except json.JSONDecodeError as exc:
+            problems.append(f"{name}.json is not valid JSON: {exc}")
+            continue
+
+        for stamp in REQUIRED_STAMPS:
+            if stamp not in payload:
+                problems.append(f"{name}.json is missing the required '{stamp}' stamp")
+
+        recorded = payload.get("code_fingerprint")
+        if recorded is None:
+            problems.append(f"{name}.json has no code_fingerprint — regenerate it")
+        elif recorded != code_fingerprint(payload.get("engine_module")):
+            problems.append(
+                f"{name}.json was produced by different code than is checked in — regenerate "
+                "with the matching bench/run_*.py"
+            )
+
+
+def check_prose(problems: list[str]) -> None:
+    for source in sorted((ROOT / "chapters").glob("*.md")):
+        for n, line in enumerate(source.read_text().splitlines(), start=1):
+            # Generated tables and their caption lines legitimately carry real figures.
+            if line.lstrip().startswith(("|", ":", "*Conditions")):
+                continue
+            for hit in HARDCODED_FIGURE.findall(line):
+                problems.append(
+                    f"{source.name}:{n} has the measured figure '{hit.strip()}' typed into prose "
+                    "— put it in a generated fragment instead (PLAN.md §6.3)"
+                )
 
 
 def main() -> int:
     problems: list[str] = []
-    sources = sorted(ROOT.glob("chapters/*.md")) + sorted(ROOT.glob("appendices/*.md"))
-
-    referenced: set[str] = set()
-    for src in sources:
-        for name in REF.findall(src.read_text()):
-            referenced.add(name)
-            if not (RESULTS / name).exists():
-                problems.append(f"{src.relative_to(ROOT)} references missing result: {name}")
-
-    newest_code = max((git_epoch(d) for d in CODE_DIRS), default=0)
-    for name in sorted(referenced):
-        target = RESULTS / name
-        if not target.exists():
-            continue
-        try:
-            payload = json.loads(target.read_text())
-        except json.JSONDecodeError as exc:
-            problems.append(f"{name} is not valid JSON: {exc}")
-            continue
-        for field in ("model", "hardware", "generated_at", "versions"):
-            if field not in payload:
-                problems.append(f"{name} is missing the required '{field}' stamp")
-        if newest_code and git_epoch(f"bench/results/{name}") < newest_code:
-            problems.append(
-                f"{name} predates the latest change to {'/'.join(CODE_DIRS)} — regenerate it "
-                f"with scripts/run-benchmarks.sh"
-            )
+    check_results(problems)
+    check_prose(problems)
 
     if problems:
         print("verify-numbers: FAILED")
-        for p in problems:
-            print(f"  - {p}")
+        for problem in problems:
+            print(f"  - {problem}")
         return 1
 
-    print(f"verify-numbers: OK ({len(referenced)} result file(s) referenced)")
+    print(f"verify-numbers: OK ({len(cited_results())} result file(s) cited, all stamped)")
     return 0
 
 
