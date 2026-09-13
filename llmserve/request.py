@@ -38,6 +38,10 @@ class RequestState:
     request: Request
     output_token_ids: list[int] = field(default_factory=list)
     past: list[tuple[torch.Tensor, torch.Tensor]] | None = None
+    #: physical KV blocks held by this sequence (ch08); empty for the contiguous engines
+    block_table: list[int] = field(default_factory=list)
+    #: how many tokens of this sequence are actually stored (ch08)
+    stored: int = 0
     finished: bool = False
     finish_reason: str | None = None
 

@@ -18,7 +18,12 @@ from llmserve.sampling import sample
 def _prefill_batch(
     model: TinyGPT, states: list[RequestState]
 ) -> tuple[torch.Tensor, list[list[tuple[torch.Tensor, torch.Tensor]]]]:
-    """Prefill several prompts of different lengths in one pass.
+    """Prefill several sequences of different lengths in one pass.
+
+    Prefills ``all_token_ids`` rather than the prompt alone. For a fresh request those are the
+    same thing; for one resumed after preemption (ch08) it rebuilds the cache over the tokens
+    already generated, so preemption costs compute but never costs the caller output it has
+    already been sent.
 
     Prompts are **left**-padded so that every sequence's final token sits at the same index, which
     is what lets the next decode step read one column. Two things must then be corrected for, and
@@ -30,7 +35,7 @@ def _prefill_batch(
     * **Masking.** Padded slots hold arbitrary values. Without a mask they are attended to, and one
       request's padding leaks into another's output.
     """
-    lengths = [state.request.prompt_len for state in states]
+    lengths = [len(state.all_token_ids) for state in states]
     width = max(lengths)
     device = next(model.parameters()).device
 
@@ -40,7 +45,7 @@ def _prefill_batch(
 
     for i, (state, length) in enumerate(zip(states, lengths, strict=True)):
         pad = width - length
-        input_ids[i, pad:] = torch.tensor(state.request.prompt_token_ids, dtype=torch.long)
+        input_ids[i, pad:] = torch.tensor(state.all_token_ids, dtype=torch.long)
         positions[i, pad:] = torch.arange(length, dtype=torch.long)
         valid[i, pad:] = True
 

@@ -134,3 +134,33 @@ def arithmetic_table(cached_result: str, naive_result: str, context_length: int 
     lines = ["| Quantity | Value | Source |", "|---|---|---|"]
     lines += [f"| {a} | {b} | {c} |" for a, b, c in rows]
     return "\n".join(lines)
+
+
+def memory_table(block_size: int = 16, n_blocks: int = 24) -> str:
+    """Render chapter 8's memory comparison: reserve-max against paged, in one budget.
+
+    Computed from the model config and the block geometry rather than measured, because it is
+    arithmetic: how many sequences *fit*, not how fast they run.
+    """
+    from llmserve.arithmetic import kv_bytes_per_token
+    from llmserve.config import REFERENCE_MODEL
+
+    m = REFERENCE_MODEL
+    slots = block_size * n_blocks
+    per_token = kv_bytes_per_token(m)
+    reserve_max = slots // m.max_seq_len
+    typical = 96  # a prompt plus a short answer, the trace this book uses
+    paged = slots // typical
+
+    rows = [
+        ("KV budget", f"{n_blocks} blocks x {block_size} tokens = {slots} slots"),
+        ("KV bytes per token", f"{per_token:,.0f} B"),
+        ("Budget in bytes", f"{slots * per_token / 1e6:.2f} MB"),
+        ("Reserve-max: must reserve", f"{m.max_seq_len:,} slots per sequence"),
+        ("Reserve-max: sequences that fit", f"{reserve_max}"),
+        ("Paged: allocates on demand", f"~{typical} slots per sequence"),
+        ("Paged: sequences that fit", f"~{paged}"),
+    ]
+    lines = ["| Quantity | Value |", "|---|---|"]
+    lines += [f"| {a} | {b} |" for a, b in rows]
+    return "\n".join(lines)

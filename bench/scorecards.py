@@ -49,6 +49,14 @@ SCORECARDS: dict[str, list[tuple[str, str]]] = {
         ("ch06 Static batch, 16 req/s", "static-rate16-tier1"),
         ("ch07 Continuous, 16 req/s", "continuous-rate16-tier1"),
     ],
+    "ch08-paged": [
+        ("ch07 Continuous, 4 req/s", "continuous-rate4-tier1"),
+        ("ch08 Paged, 4 req/s", "paged-rate4-tier1"),
+        ("ch07 Continuous, 8 req/s", "continuous-rate8-tier1"),
+        ("ch08 Paged, 8 req/s", "paged-rate8-tier1"),
+        ("ch07 Continuous, 16 req/s", "continuous-rate16-tier1"),
+        ("ch08 Paged, 16 req/s", "paged-rate16-tier1"),
+    ],
     # The running scorecard: the whole journey so far, at one saturating rate.
     "ch07-running-scorecard": [
         ("ch01 Naive", "naive-rate16-tier1"),
@@ -67,4 +75,5 @@ CONDITIONS: dict[str, str] = {
     "ch06-static-batching": "static-rate8-tier1",
     "ch07-continuous-batching": "continuous-rate8-tier1",
     "ch07-running-scorecard": "continuous-rate16-tier1",
+    "ch08-paged": "paged-rate16-tier1",
 }

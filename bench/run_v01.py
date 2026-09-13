@@ -16,13 +16,17 @@ from bench.harness import RESULTS_DIR, SLO, make_poisson_trace, run_benchmark
 from llmserve.config import REFERENCE_MODEL
 from llmserve.engines.batched import ContinuousBatchEngine, StaticBatchEngine
 from llmserve.engines.naive import CachedEngine, NaiveEngine
+from llmserve.engines.paged import PagedEngine
 from llmserve.model import build_model
 
+#: engine name -> factory taking (model, config). A factory rather than a class because the
+#: paged engine needs to know the model's shape to size its block pool.
 ENGINES = {
-    "naive": NaiveEngine,
-    "cached": CachedEngine,
-    "static": StaticBatchEngine,
-    "continuous": ContinuousBatchEngine,
+    "naive": lambda model, cfg: NaiveEngine(model),
+    "cached": lambda model, cfg: CachedEngine(model),
+    "static": lambda model, cfg: StaticBatchEngine(model),
+    "continuous": lambda model, cfg: ContinuousBatchEngine(model),
+    "paged": lambda model, cfg: PagedEngine(model, cfg, n_blocks=256, block_size=16),
 }
 
 
@@ -51,9 +55,10 @@ def main() -> None:
             output_len=(16, 48),
             seed=7,
         )
-        for name, cls in ENGINES.items():
+        for name, factory in ENGINES.items():
+            engine = factory(model, REFERENCE_MODEL)
             result = run_benchmark(
-                cls(model),
+                engine,
                 trace,
                 rate_per_second=rate,
                 slo=SLO(ttft_seconds=1.0, itl_seconds=0.05),
@@ -64,6 +69,9 @@ def main() -> None:
                     "torch_threads": args.threads,
                 },
             )
+            for counter in ("preemptions", "peak_running", "peak_kv_utilisation"):
+                if hasattr(engine, counter):
+                    result.meta[counter] = getattr(engine, counter)
             path = RESULTS_DIR / f"{name}-rate{rate:g}-{args.tag}.json"
             result.to_json(path)
             s = result.summary()
