@@ -1,6 +1,6 @@
 {
   "engine": "microbenchmark",
-  "generated_at": "2026-09-13T14:59:01+00:00",
+  "generated_at": "2026-09-13T15:18:53+00:00",
   "hardware": {
     "platform": "Linux-6.18.44-fc-v24-x86_64-with-glibc2.39",
     "machine": "x86_64",
@@ -37,17 +37,17 @@
       {
         "passes": 1,
         "chunk": 1536,
-        "ms": 664.1
+        "ms": 747.5
       },
       {
         "passes": 6,
         "chunk": 256,
-        "ms": 347.5
+        "ms": 462.0
       },
       {
         "passes": 24,
         "chunk": 64,
-        "ms": 353.1
+        "ms": 403.7
       }
     ]
   }

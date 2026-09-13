@@ -38,9 +38,11 @@ These are what the book's credibility rests on. Do not work around them.
 - **Adding executable cells to chapters.** The book build is pure markdown and must stay that
   way; render figures to a fragment instead.
 - **Unpinned `mystmd`.** Always install the version from `package.json`.
-- **Editing `bench/harness.py` casually.** It is a dependency of every committed result; a change
-  invalidates all of them, and `verify-numbers.py` fails the build until they are regenerated with
-  `python -m bench.run_v01`.
+- **Editing `bench/harness.py` or `llmserve/{model,sampling,request,config}.py` casually.** Every
+  committed result records a content hash of those files plus the engine module that produced it,
+  so a change invalidates all of them and `verify-numbers.py` fails until they are regenerated
+  (`python -m bench.run_v01`, `run_chat`, `run_chunked`, `run_disagg`, then
+  `scripts/render-scorecards.py`). Changing one engine module invalidates only its own results.
 - **Bare `pytest`.** Use `python3 -m pytest`, so tests run under the interpreter that has the
   project's dependencies; a standalone pytest has its own isolated environment.
 - **`BASE_URL`.** This is a *project* site at `/llm-serving-from-scratch/`. The deploy workflow

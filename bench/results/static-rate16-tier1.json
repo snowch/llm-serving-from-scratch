@@ -1,6 +1,6 @@
 {
   "engine": "static-batch",
-  "generated_at": "2026-09-13T15:04:09+00:00",
+  "generated_at": "2026-09-13T15:18:11+00:00",
   "hardware": {
     "platform": "Linux-6.18.44-fc-v24-x86_64-with-glibc2.39",
     "machine": "x86_64",
@@ -28,6 +28,8 @@
     "torch": "2.14.0+cu130",
     "numpy": "2.4.6"
   },
+  "code_fingerprint": "ee484a395533a320",
+  "engine_module": "/home/user/llm-serving-from-scratch/llmserve/engines/batched.py",
   "conditions": {
     "rate_per_second": 16.0,
     "slo": {
@@ -41,15 +43,15 @@
   "summary": {
     "requests": 24,
     "completed": 24,
-    "ttft_p50": 0.2256,
-    "ttft_p95": 0.4188,
-    "ttft_p99": 0.4382,
-    "itl_p50": 0.0091,
-    "itl_p95": 0.0108,
-    "output_tokens_per_second": 400.41,
-    "requests_per_second": 11.908,
-    "goodput_per_second": 11.908,
+    "ttft_p50": 0.2881,
+    "ttft_p95": 0.4913,
+    "ttft_p99": 0.4914,
+    "itl_p50": 0.0099,
+    "itl_p95": 0.012,
+    "output_tokens_per_second": 364.5,
+    "requests_per_second": 10.84,
+    "goodput_per_second": 10.84,
     "goodput_fraction": 1.0,
-    "wall_time": 2.015
+    "wall_time": 2.214
   }
 }

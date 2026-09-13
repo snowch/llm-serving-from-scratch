@@ -7,9 +7,9 @@
 | KV cache per token | 3,072 B | computed |
 | FLOPs per token | 11.68 MFLOP | computed |
 | Bytes read per decode step (ctx 96) | 23.65 MB | weights are 98.8% of it |
-| Measured decode rate, one stream | 233 tok/s | measured |
-| Implied achieved bandwidth | 5.50 GB/s | derived |
+| Measured decode rate, one stream | 213 tok/s | measured |
+| Implied achieved bandwidth | 5.03 GB/s | derived |
 | Predicted no-cache penalty | 27.5x | from FLOPs alone |
-| Measured no-cache penalty | 3.33x | measured |
+| Measured no-cache penalty | 2.85x | measured |
 
-*Conditions: TinyGPT (reference, random weights) (5,838,080 params), 4x x86_64 CPU, torch 2.14.0+cu130, poisson, prompt 32-96, output 16-48, seed 7, arrival rate 1.0/s, measured 2026-09-13T15:01:45+00:00.*
+*Conditions: TinyGPT (reference, random weights) (5,838,080 params), 4x x86_64 CPU, torch 2.14.0+cu130, poisson, prompt 32-96, output 16-48, seed 7, arrival rate 1.0/s, measured 2026-09-13T15:15:46+00:00.*

@@ -17,6 +17,8 @@ average.
 
 from __future__ import annotations
 
+import hashlib
+import inspect
 import json
 import platform
 import subprocess
@@ -32,6 +34,30 @@ from llmserve.request import Request
 from llmserve.sampling import SamplingParams
 
 RESULTS_DIR = Path(__file__).resolve().parent / "results"
+ROOT = Path(__file__).resolve().parent.parent
+
+#: Files whose contents determine the numbers any engine produces. A result records a hash of
+#: these plus the engine module that generated it, so staleness is decided by what the code *is*
+#: rather than by when it was committed. Commit times cannot tell an unrelated new file apart
+#: from a change to the thing being measured, and get it wrong in both directions.
+CORE_SOURCES = (
+    "llmserve/model.py",
+    "llmserve/sampling.py",
+    "llmserve/request.py",
+    "llmserve/config.py",
+    "bench/harness.py",
+)
+
+
+def code_fingerprint(engine_module: str | None = None) -> str:
+    """Hash the sources a benchmark result depends on."""
+    digest = hashlib.sha256()
+    paths = [ROOT / name for name in CORE_SOURCES]
+    if engine_module:
+        paths.append(Path(engine_module))
+    for path in paths:
+        digest.update(path.read_bytes() if path.exists() else b"")
+    return digest.hexdigest()[:16]
 
 
 @dataclass(frozen=True)
@@ -119,6 +145,7 @@ class BenchResult:
     rate_per_second: float
     slo: SLO
     meta: dict = field(default_factory=dict)
+    engine_module: str | None = None
 
     def summary(self) -> dict:
         ttfts = np.array([r.ttft for r in self.records if r.ttft is not None])
@@ -167,6 +194,8 @@ class BenchResult:
             "hardware": _hardware(),
             "model": self.meta.get("model", {}),
             "versions": _versions(),
+            "code_fingerprint": code_fingerprint(self.engine_module),
+            "engine_module": self.engine_module,
             "conditions": {
                 "rate_per_second": self.rate_per_second,
                 "slo": asdict(self.slo),
@@ -265,6 +294,7 @@ def run_benchmark(
     wall = time.perf_counter() - start
     return BenchResult(
         engine=getattr(engine, "name", type(engine).__name__),
+        engine_module=inspect.getsourcefile(type(engine)),
         records=list(records.values()),
         wall_time=wall,
         rate_per_second=rate_per_second,

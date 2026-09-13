@@ -1,69 +1,44 @@
 #!/usr/bin/env python3
-"""Guard against unstamped and stale benchmark numbers (PLAN.md §6.3).
+"""Guard against unstamped, stale and hand-typed numbers (PLAN.md §6.3).
 
 Every figure in the book comes from a result file in ``bench/results/``, rendered into a fragment
-under ``chapters/_generated/`` by ``scripts/render-scorecards.py``. This script enforces three
-rules, so a wrong number fails the build rather than reaching a reader:
+under ``chapters/_generated/`` by ``scripts/render-scorecards.py``. Four rules, so a wrong number
+fails the build rather than reaching a reader:
 
 1. Every result a scorecard cites exists.
 2. Every such result carries its stamps — model, hardware, versions, date. A performance number
    whose conditions are unknown cannot be checked by anyone, including us in six months.
-3. No result predates the engine code it claims to measure.
+3. Every result was produced by the code that is checked in. This is a **content hash** over the
+   shared core plus the engine module that generated it. An earlier version compared commit
+   times, which cannot tell an unrelated new file apart from a change to the thing being measured
+   and was wrong in both directions: it marked every result stale when any file under
+   ``llmserve/`` changed, and it could not see a change committed alongside the results.
+4. No measured figure is typed into chapter prose, where regenerating results would silently
+   invalidate it.
 
-Fragment freshness is checked separately by ``render-scorecards.py --check``, which both this
-script and CI run.
+Fragment freshness is checked separately by ``render-scorecards.py --check``.
 """
 
 from __future__ import annotations
 
 import json
 import re
-import subprocess
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
+from bench.harness import code_fingerprint  # noqa: E402
 from bench.scorecards import CONDITIONS, SCORECARDS  # noqa: E402
 
 RESULTS = ROOT / "bench" / "results"
-CODE_DIRS = ["llmserve", "bench/harness.py"]
 REQUIRED_STAMPS = ("model", "hardware", "generated_at", "versions", "summary")
 
 #: A decimal followed by a multiplier or a unit is almost always a measured figure, and measured
-#: figures belong in a generated fragment rather than in prose — regenerating results silently
-#: invalidates anything hand-typed. Integers are allowed, so "2 x n_layers" in a formula is fine.
-HARDCODED_FIGURE = re.compile(r"\b\d+\.\d+\s*(?:[x\u00d7]|ms\b|s\b|GB/s\b|tok/s\b)")
-
-
-def git_epoch(path: str) -> int:
-    """Last commit time for a path, or 0 if it has never been committed."""
-    result = subprocess.run(
-        ["git", "log", "-1", "--format=%ct", "--", path],
-        cwd=ROOT,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    return int(result.stdout.strip() or 0)
-
-
-def uncommitted() -> set[str]:
-    """Paths with working-tree changes.
-
-    A result that has just been regenerated has no new commit yet, so comparing commit times would
-    report it as stale — the opposite of the truth, and it would make the guard cry wolf exactly
-    when someone is doing the right thing.
-    """
-    result = subprocess.run(
-        ["git", "status", "--porcelain", "--", "bench/results"],
-        cwd=ROOT,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    return {line[3:].strip() for line in result.stdout.splitlines() if line.strip()}
+#: figures belong in a generated fragment. Integers are allowed, so "2 x n_layers" in a formula
+#: is fine.
+HARDCODED_FIGURE = re.compile(r"\b\d+\.\d+\s*(?:[x×]|ms\b|s\b|GB/s\b|tok/s\b)")
 
 
 def cited_results() -> set[str]:
@@ -71,11 +46,8 @@ def cited_results() -> set[str]:
     return names | set(CONDITIONS.values())
 
 
-def main() -> int:
-    problems: list[str] = []
-    names = cited_results()
-
-    for name in sorted(names):
+def check_results(problems: list[str]) -> None:
+    for name in sorted(cited_results()):
         path = RESULTS / f"{name}.json"
         if not path.exists():
             problems.append(f"missing result: bench/results/{name}.json (cited by a scorecard)")
@@ -85,33 +57,38 @@ def main() -> int:
         except json.JSONDecodeError as exc:
             problems.append(f"{name}.json is not valid JSON: {exc}")
             continue
+
         for stamp in REQUIRED_STAMPS:
             if stamp not in payload:
                 problems.append(f"{name}.json is missing the required '{stamp}' stamp")
 
-    newest_code = max((git_epoch(d) for d in CODE_DIRS), default=0)
-    pending = uncommitted()
-    if newest_code:
-        for name in sorted(names):
-            rel = f"bench/results/{name}.json"
-            if not (RESULTS / f"{name}.json").exists() or rel in pending:
-                continue
-            committed = git_epoch(rel)
-            if committed and committed < newest_code:
-                problems.append(
-                    f"{name}.json predates the latest change to {', '.join(CODE_DIRS)} — "
-                    "regenerate with `python -m bench.run_v01`"
-                )
+        recorded = payload.get("code_fingerprint")
+        if recorded is None:
+            problems.append(f"{name}.json has no code_fingerprint — regenerate it")
+        elif recorded != code_fingerprint(payload.get("engine_module")):
+            problems.append(
+                f"{name}.json was produced by different code than is checked in — regenerate "
+                "with the matching bench/run_*.py"
+            )
 
+
+def check_prose(problems: list[str]) -> None:
     for source in sorted((ROOT / "chapters").glob("*.md")):
         for n, line in enumerate(source.read_text().splitlines(), start=1):
+            # Generated tables and their caption lines legitimately carry real figures.
             if line.lstrip().startswith(("|", ":", "*Conditions")):
-                continue  # generated tables and their caption lines carry real figures
+                continue
             for hit in HARDCODED_FIGURE.findall(line):
                 problems.append(
-                    f"{source.name}:{n} has the measured figure '{hit.strip()}' typed into prose — "
-                    "put it in a generated fragment instead (PLAN.md §6.3)"
+                    f"{source.name}:{n} has the measured figure '{hit.strip()}' typed into prose "
+                    "— put it in a generated fragment instead (PLAN.md §6.3)"
                 )
+
+
+def main() -> int:
+    problems: list[str] = []
+    check_results(problems)
+    check_prose(problems)
 
     if problems:
         print("verify-numbers: FAILED")
@@ -119,7 +96,7 @@ def main() -> int:
             print(f"  - {problem}")
         return 1
 
-    print(f"verify-numbers: OK ({len(names)} result file(s) cited, all stamped)")
+    print(f"verify-numbers: OK ({len(cited_results())} result file(s) cited, all stamped)")
     return 0
 
 

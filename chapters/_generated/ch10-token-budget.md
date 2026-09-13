@@ -2,8 +2,8 @@
 
 | Configuration | TTFT p50 | TTFT p95 | ITL p50 | Output tok/s | Goodput req/s |
 |---|---|---|---|---|---|
-| Budget 64 tokens/step | 3.003s | 7.579s | 0.076s | 99.73 | 0.242 |
-| Budget 512 tokens/step | 2.143s | 4.453s | 0.0471s | 146.2 | 0.356 |
-| Budget 8192 (no chunking) | 1.854s | 3.262s | 0.0383s | 168.5 | 1.366 |
+| Budget 64 tokens/step | 3.545s | 8.36s | 0.0731s | 93.83 | 0.228 |
+| Budget 512 tokens/step | 2.1s | 3.977s | 0.0484s | 150.7 | 0.366 |
+| Budget 8192 (no chunking) | 2.293s | 4.228s | 0.0459s | 146.2 | 0.356 |
 
-*Conditions: TinyGPT (reference, random weights) (5,838,080 params), 4x x86_64 CPU, torch 2.14.0+cu130, mixed: 35% of prompts 1536 tokens, rest 16-32, output 32-64, seed 3, arrival rate 8.0/s, measured 2026-09-13T14:59:22+00:00.*
+*Conditions: TinyGPT (reference, random weights) (5,838,080 params), 4x x86_64 CPU, torch 2.14.0+cu130, mixed: 35% of prompts 1536 tokens, rest 16-32, output 32-64, seed 3, arrival rate 8.0/s, measured 2026-09-13T15:19:14+00:00.*
