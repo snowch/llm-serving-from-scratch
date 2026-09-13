@@ -2,8 +2,8 @@
 
 | Configuration | TTFT p50 | TTFT p95 | ITL p50 | Output tok/s | Goodput req/s |
 |---|---|---|---|---|---|
-| Naive, 2 req/s | 0.2374s | 0.5704s | 0.0121s | 58.84 | 1.816 |
-| Naive, 4 req/s | 3.066s | 4.955s | 0.014s | 71.13 | 0.353 |
-| Naive, 8 req/s | 4.524s | 7.679s | 0.0144s | 70.29 | 0.261 |
+| Naive, 4 req/s | 2.707s | 4.611s | 0.0136s | 72.94 | 0.633 |
+| Naive, 8 req/s | 4.073s | 7.289s | 0.0137s | 73.47 | 0.364 |
+| Naive, 16 req/s | 4.399s | 7.884s | 0.0123s | 78.92 | 0.293 |
 
-*Conditions: TinyGPT (reference, random weights) (5,838,080 params), 4x x86_64 CPU, torch 2.14.0+cu130, poisson, prompt 32-96, output 16-48, seed 7, arrival rate 4.0/s, measured 2026-09-13T13:49:34+00:00.*
+*Conditions: TinyGPT (reference, random weights) (5,838,080 params), 4x x86_64 CPU, torch 2.14.0+cu130, poisson, prompt 32-96, output 16-48, seed 7, arrival rate 4.0/s, measured 2026-09-13T14:25:31+00:00.*

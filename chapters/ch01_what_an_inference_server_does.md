@@ -106,16 +106,15 @@ Here is the baseline. Same trace, same model, same machine, at three arrival rat
 ```{include} _generated/ch01-baseline.md
 ```
 
-Read the first column downwards. At half a request per second the server is fine. At two, the
-median wait for a first token has grown by more than an order of magnitude. At four, the median
-user waits over three seconds before a single character appears — and the output token rate has
-stopped climbing.
+Read the first column downwards. At one request per second the server copes. By four, the median
+user waits seconds before a single character appears — and the output token rate has almost
+stopped climbing. From there, doubling the load again barely moves it.
 
 That flat output rate is the engine's capacity. Beyond it, extra load does not produce extra
 work; it produces a queue. And because the SLO in this run allows one second to the first token,
 almost nothing at high load meets it.
 
-Look at the goodput column at 4 and 8 requests per second, though. It goes **down**.
+Look at the goodput column as the rate climbs, though. It goes **down**.
 
 ```{include} _generated/ch02-goodput-collapse.md
 ```

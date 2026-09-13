@@ -23,10 +23,10 @@ previous tokens. Every one of those was computed on the previous step, produced 
 result, and was thrown away.
 
 The arithmetic from {ref}`ch03` says this should be expensive: generating *n* tokens without a
-cache costs work proportional to *n²*, against *n* with one. For a 64-token prompt and 32 output
-tokens that predicted a 27.5× penalty.
+cache costs work proportional to *n²*, against *n* with one. For a prompt of a few dozen tokens
+that predicts a penalty of well over an order of magnitude.
 
-Whether it actually costs 27.5× is the interesting question, and the answer is instructive.
+Whether it actually costs that much is the interesting question, and the answer is instructive.
 
 ## The idea
 
@@ -109,8 +109,8 @@ Same trace, same model, same machine — one engine with a cache and one without
 
 Read it in two parts.
 
-**ITL falls by about 2.7×, and stays flat.** That is the cache doing its job: per-token cost no
-longer grows with sequence length.
+**ITL falls by roughly a factor of three, and stays flat.** That is the cache doing its job:
+per-token cost no longer grows with sequence length.
 
 **Capacity roughly doubles**, and the effect on TTFT at load is much larger than the ITL
 improvement alone suggests. At 8 requests per second the median wait for a first token drops from
@@ -118,8 +118,8 @@ seconds to a fraction of one. This is a queueing effect rather than a compute on
 means a shorter queue, and at high utilisation a small service improvement produces a large
 latency improvement. {ref}`ch10` makes that relationship explicit.
 
-**And 2.7× is not 27.5×.** {ref}`ch03` predicted an order of magnitude more than we got, and the
-explanation is the two-bound model. A decode step on this model reads 23 MB of weights whether it
+**And the measured gain is nowhere near the predicted one.** {ref}`ch03` forecast an order of
+magnitude more than we got, and the explanation is the two-bound model. A decode step on this model reads 23 MB of weights whether it
 processes one token or ninety-six. Removing the redundant arithmetic removed work the machine was
 doing in time it was spending on memory anyway.
 

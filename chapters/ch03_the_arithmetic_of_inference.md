@@ -114,9 +114,10 @@ concurrent sequence. That crossover is why Part III is mostly about memory.
 time-per-token gives roughly 5 GB/s achieved on this machine. That figure now predicts things —
 {ref}`ch06` uses it to forecast batched throughput before implementing batching.
 
-**The FLOPs model over-predicts by an order of magnitude, and that is the most instructive line in
-the table.** Counting arithmetic alone says removing the KV cache should cost 27.5×: without a
-cache, generating token *n* redoes all *n* previous tokens. Measured, it costs 2.76×.
+**The FLOPs model over-predicts by an order of magnitude, and the last two rows of that table are
+the most instructive lines in this chapter.** Counting arithmetic alone, removing the KV cache
+should be enormously expensive: without one, generating token *n* redoes all *n* previous tokens.
+Measured, the penalty is a small single-digit factor.
 
 The explanation is the rule above. At this model size, a decode step is dominated by reading 23 MB
 of weights, and that cost is paid whether we process one token or ninety-six. The extra arithmetic
@@ -135,7 +136,8 @@ The arithmetic is a model, and it ignores:
 - **Attention's quadratic term.** Fine at 96 tokens, badly wrong at 32k. {ref}`ch21` is where this
   stops being safe.
 - **Kernel launch and framework overhead.** At this model size a meaningful share of each step is
-  Python and dispatch, not memory traffic. That is one reason the 27.5× did not materialise.
+  Python and dispatch, not memory traffic. That is one reason the predicted penalty did not
+  materialise.
 - **Cache hierarchy.** "Bandwidth" is one number standing in for registers, several cache levels
   and DRAM, each an order of magnitude apart.
 - **Everything except the model.** Tokenisation, scheduling and HTTP are all invisible here.

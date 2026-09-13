@@ -15,31 +15,56 @@ from __future__ import annotations
 #: fragment name -> rows of (label, result file stem)
 SCORECARDS: dict[str, list[tuple[str, str]]] = {
     "ch01-baseline": [
-        ("Naive, 0.5 req/s", "naive-rate0.5-tier1"),
         ("Naive, 1 req/s", "naive-rate1-tier1"),
-        ("Naive, 2 req/s", "naive-rate2-tier1"),
         ("Naive, 4 req/s", "naive-rate4-tier1"),
         ("Naive, 8 req/s", "naive-rate8-tier1"),
+        ("Naive, 16 req/s", "naive-rate16-tier1"),
     ],
     "ch02-goodput-collapse": [
-        ("Naive, 2 req/s", "naive-rate2-tier1"),
         ("Naive, 4 req/s", "naive-rate4-tier1"),
         ("Naive, 8 req/s", "naive-rate8-tier1"),
+        ("Naive, 16 req/s", "naive-rate16-tier1"),
     ],
     "ch05-kv-cache": [
         ("ch01 Naive, 1 req/s", "naive-rate1-tier1"),
         ("ch05 KV cache, 1 req/s", "cached-rate1-tier1"),
-        ("ch01 Naive, 4 req/s", "naive-rate4-tier1"),
-        ("ch05 KV cache, 4 req/s", "cached-rate4-tier1"),
         ("ch01 Naive, 8 req/s", "naive-rate8-tier1"),
         ("ch05 KV cache, 8 req/s", "cached-rate8-tier1"),
+        ("ch01 Naive, 16 req/s", "naive-rate16-tier1"),
+        ("ch05 KV cache, 16 req/s", "cached-rate16-tier1"),
+    ],
+    "ch06-static-batching": [
+        ("ch05 One at a time, 4 req/s", "cached-rate4-tier1"),
+        ("ch06 Static batch, 4 req/s", "static-rate4-tier1"),
+        ("ch05 One at a time, 8 req/s", "cached-rate8-tier1"),
+        ("ch06 Static batch, 8 req/s", "static-rate8-tier1"),
+        ("ch05 One at a time, 16 req/s", "cached-rate16-tier1"),
+        ("ch06 Static batch, 16 req/s", "static-rate16-tier1"),
+    ],
+    "ch07-continuous-batching": [
+        ("ch06 Static batch, 4 req/s", "static-rate4-tier1"),
+        ("ch07 Continuous, 4 req/s", "continuous-rate4-tier1"),
+        ("ch06 Static batch, 8 req/s", "static-rate8-tier1"),
+        ("ch07 Continuous, 8 req/s", "continuous-rate8-tier1"),
+        ("ch06 Static batch, 16 req/s", "static-rate16-tier1"),
+        ("ch07 Continuous, 16 req/s", "continuous-rate16-tier1"),
+    ],
+    # The running scorecard: the whole journey so far, at one saturating rate.
+    "ch07-running-scorecard": [
+        ("ch01 Naive", "naive-rate16-tier1"),
+        ("ch05 KV cache", "cached-rate16-tier1"),
+        ("ch06 Static batching", "static-rate16-tier1"),
+        ("ch07 Continuous batching", "continuous-rate16-tier1"),
     ],
 }
 
 #: fragment name -> result file whose conditions line to print
 CONDITIONS: dict[str, str] = {
     "ch01-baseline": "naive-rate1-tier1",
-    "ch03-arithmetic": "cached-rate1-tier1",
     "ch02-goodput-collapse": "naive-rate4-tier1",
-    "ch05-kv-cache": "cached-rate4-tier1",
+    "ch03-arithmetic": "cached-rate1-tier1",
+    "ch05-kv-cache": "cached-rate8-tier1",
+    "ch06-static-batching": "static-rate8-tier1",
+    "ch07-continuous-batching": "continuous-rate8-tier1",
+    "ch07-running-scorecard": "continuous-rate16-tier1",
 }

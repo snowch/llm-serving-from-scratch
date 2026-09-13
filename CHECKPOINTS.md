@@ -12,7 +12,7 @@ git checkout ch07-continuous-batching   # the engine exactly as it stood at the 
 | ch02 | `ch02-harness` | unchanged engine; `bench/` harness exists | baseline, measured properly |
 | ch04 | `ch04-own-decode` | our sampling and detokenisation, equivalence-tested | correctness baseline |
 | ch05 | `ch05-kv-cache` | per-sequence contiguous KV cache | first speedup |
-| ch06 | `ch06-static-batching` | fixed-size batches, padded | throughput up, utilisation poor |
+| ch06 | `ch06-static-batching` | fixed-size batches, left-padded, waste instrumented | throughput up, a third of slots discarded |
 | ch07 | `ch07-continuous-batching` | iteration-level scheduler, `step()` loop | largest single jump |
 | ch08 | `ch08-paged-attention` | block allocator, block tables, preemption | concurrency up |
 | ch09 | `ch09-prefix-caching` | radix prefix cache with LRU eviction | TTFT down on shared prefixes |

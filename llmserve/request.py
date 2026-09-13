@@ -50,6 +50,11 @@ class RequestState:
         return [*self.request.prompt_token_ids, *self.output_token_ids]
 
     @property
+    def cache_len(self) -> int:
+        """How many tokens this sequence currently has cached."""
+        return 0 if self.past is None else self.past[0][0].shape[2]
+
+    @property
     def total_len(self) -> int:
         return self.request.prompt_len + len(self.output_token_ids)
 

@@ -122,9 +122,9 @@ Now chapter 1's claims can be checked. The same naive engine, past its capacity:
 ```{include} _generated/ch02-goodput-collapse.md
 ```
 
-Read the last two columns together. Between 4 and 8 requests per second, the arrival rate doubles.
-Output tokens per second does not move — the engine is saturated, and that flat number is its
-capacity.
+Read the last two columns together. Across those rows the arrival rate doubles, then doubles
+again. Output tokens per second barely moves — the engine is saturated, and that flat number is
+its capacity.
 
 Goodput goes *down*.
 

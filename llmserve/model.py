@@ -50,10 +50,15 @@ def build_rope_cache(
 
 
 def apply_rope(x: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor) -> torch.Tensor:
-    """Rotate x by the angles for its positions. x is [batch, heads, seq, head_dim]."""
+    """Rotate x by the angles for its positions.
+
+    ``x`` is [batch, heads, seq, head_dim]; ``cos``/``sin`` are [batch, seq, head_dim/2]. Positions
+    are per sequence rather than shared, because a padded batch has sequences sitting at different
+    offsets and giving them all the same positions is a silent correctness bug (ch06).
+    """
     x1, x2 = x.chunk(2, dim=-1)
-    cos = cos.unsqueeze(0).unsqueeze(0)
-    sin = sin.unsqueeze(0).unsqueeze(0)
+    cos = cos.unsqueeze(1)
+    sin = sin.unsqueeze(1)
     return torch.cat([x1 * cos - x2 * sin, x1 * sin + x2 * cos], dim=-1)
 
 
@@ -81,6 +86,7 @@ class Attention(nn.Module):
         cos: torch.Tensor,
         sin: torch.Tensor,
         past_kv: tuple[torch.Tensor, torch.Tensor] | None,
+        valid_mask: torch.Tensor | None = None,
     ) -> tuple[torch.Tensor, tuple[torch.Tensor, torch.Tensor]]:
         cfg = self.cfg
         bsz, seq_len, _ = x.shape
@@ -107,13 +113,28 @@ class Attention(nn.Module):
         total_len = k.shape[2]
         scores = q @ k.transpose(-2, -1) / math.sqrt(cfg.head_dim)
 
+        # Mask with the dtype's most negative finite value rather than -inf.
+        #
+        # This is not fussiness. In a left-padded batch, a query at a padding position is masked
+        # at every position it may attend to. softmax over a row of all -inf is NaN, that NaN
+        # reaches V at the padding positions, and although real tokens give those positions a
+        # weight of zero, 0 * NaN is NaN — so one sequence's padding silently corrupts every other
+        # sequence in the batch. A finite floor makes such a row a harmless uniform distribution,
+        # while real rows still underflow padded weights to exactly zero.
+        neg = torch.finfo(scores.dtype).min
+
         # Causal mask. During decode seq_len is 1 and every cached position is visible, so the
         # mask is a no-op — which is exactly why decode is cheap in FLOPs and expensive in bytes.
         if seq_len > 1:
             causal = torch.ones(seq_len, total_len, dtype=torch.bool, device=x.device).tril(
                 diagonal=total_len - seq_len
             )
-            scores = scores.masked_fill(~causal, float("-inf"))
+            scores = scores.masked_fill(~causal, neg)
+
+        # Padding mask. Batching sequences of different lengths means some cache slots hold
+        # nothing; attending to them would blend one request's padding into another's output.
+        if valid_mask is not None:
+            scores = scores.masked_fill(~valid_mask[:, None, None, :], neg)
 
         attn = scores.softmax(dim=-1)
         out = (attn @ v).transpose(1, 2).reshape(bsz, seq_len, cfg.d_model)
@@ -148,8 +169,9 @@ class Block(nn.Module):
         cos: torch.Tensor,
         sin: torch.Tensor,
         past_kv: tuple[torch.Tensor, torch.Tensor] | None,
+        valid_mask: torch.Tensor | None = None,
     ) -> tuple[torch.Tensor, tuple[torch.Tensor, torch.Tensor]]:
-        attn_out, present = self.attn(self.attn_norm(x), cos, sin, past_kv)
+        attn_out, present = self.attn(self.attn_norm(x), cos, sin, past_kv, valid_mask)
         x = x + attn_out
         return x + self.mlp(self.mlp_norm(x)), present
 
@@ -187,6 +209,7 @@ class TinyGPT(nn.Module):
         input_ids: torch.Tensor,
         past: KVCache | None = None,
         positions: torch.Tensor | None = None,
+        valid_mask: torch.Tensor | None = None,
     ) -> tuple[torch.Tensor, KVCache]:
         """Return logits for every input position, plus the updated cache.
 
@@ -198,6 +221,8 @@ class TinyGPT(nn.Module):
         if positions is None:
             start = 0 if past is None else past[0][0].shape[2]
             positions = torch.arange(start, start + seq_len, device=input_ids.device)
+        if positions.dim() == 1:
+            positions = positions.unsqueeze(0).expand(bsz, -1)
 
         cos = self.rope_cos[positions]
         sin = self.rope_sin[positions]
@@ -205,7 +230,7 @@ class TinyGPT(nn.Module):
         x = self.embed(input_ids)
         present: KVCache = []
         for i, block in enumerate(self.blocks):
-            x, kv = block(x, cos, sin, None if past is None else past[i])
+            x, kv = block(x, cos, sin, None if past is None else past[i], valid_mask)
             present.append(kv)
         return self.lm_head(self.norm(x)), present
 

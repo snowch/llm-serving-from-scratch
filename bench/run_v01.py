@@ -14,10 +14,16 @@ import torch
 
 from bench.harness import RESULTS_DIR, SLO, make_poisson_trace, run_benchmark
 from llmserve.config import REFERENCE_MODEL
+from llmserve.engines.batched import ContinuousBatchEngine, StaticBatchEngine
 from llmserve.engines.naive import CachedEngine, NaiveEngine
 from llmserve.model import build_model
 
-ENGINES = {"naive": NaiveEngine, "cached": CachedEngine}
+ENGINES = {
+    "naive": NaiveEngine,
+    "cached": CachedEngine,
+    "static": StaticBatchEngine,
+    "continuous": ContinuousBatchEngine,
+}
 
 
 def main() -> None:
