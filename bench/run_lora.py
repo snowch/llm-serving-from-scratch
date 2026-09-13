@@ -1,4 +1,4 @@
-"""Generate the chapter 19 results: what an adapter buys, and what serving many of them costs.
+"""Generate the chapter 21 results: what an adapter buys, and what serving many of them costs.
 
 Run with ``python -m bench.run_lora``. Two measurements that answer different questions.
 

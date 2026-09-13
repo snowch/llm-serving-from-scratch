@@ -1,4 +1,4 @@
-"""Generate the chapter 12 results: what grouped-query attention costs and saves.
+"""Generate the chapter 13 results: what grouped-query attention costs and saves.
 
 Run with ``python -m bench.run_attention``. Varies only ``n_kv_heads`` — from full multi-head
 attention down to multi-query — and measures both the KV cache footprint and what it does to

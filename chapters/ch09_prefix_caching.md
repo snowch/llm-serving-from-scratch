@@ -172,7 +172,7 @@ Small, but not zero:
   match rather than trusting the hash alone, and ours does not.
 - **Cache state is invisible in the output.** A bug here does not crash, it produces subtly wrong
   answers — hence the equivalence test asserting a hit changes nothing.
-- **Reuse depends entirely on the workload.** {ref}`ch22` shows agent traffic where it is worth
+- **Reuse depends entirely on the workload.** {ref}`ch24` shows agent traffic where it is worth
   more than everything else in this book combined, and batch workloads where it is worth nothing.
 
 ## Key takeaways

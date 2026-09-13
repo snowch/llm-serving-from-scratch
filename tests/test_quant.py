@@ -1,4 +1,4 @@
-"""Chapter 14: quantisation must compress, and must be honest about what it costs."""
+"""Chapter 15: quantisation must compress, and must be honest about what it costs."""
 
 import pytest
 import torch

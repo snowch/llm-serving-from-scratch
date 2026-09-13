@@ -8,7 +8,7 @@ grouped-query attention, a KV cache, batching, and eventually paging.
 The weights are random, so the text it produces is meaningless. That is fine and deliberate.
 Everything this book measures — latency, throughput, cache behaviour, scheduling — depends on
 the *shape* of the computation, not on the values in the weights. Where output quality genuinely
-matters (chapter 14), the book says so and uses a trained model instead.
+matters (chapter 15), the book says so and uses a trained model instead.
 """
 
 from __future__ import annotations
@@ -66,7 +66,7 @@ class Attention(nn.Module):
     """Causal self-attention with grouped-query attention.
 
     The KV projections are narrower than the Q projection by a factor of ``group_size``. That
-    single asymmetry is the whole of GQA, and chapter 12 shows it shrinks the KV cache — and
+    single asymmetry is the whole of GQA, and chapter 13 shows it shrinks the KV cache — and
     therefore raises the concurrency ceiling — by the same factor.
     """
 
@@ -105,7 +105,7 @@ class Attention(nn.Module):
         present = (k, v)
 
         # Expand KV heads to match query heads. A real kernel reads the shared head directly
-        # instead of materialising copies; we expand for clarity, and chapter 13 fixes it.
+        # instead of materialising copies; we expand for clarity, and chapter 14 fixes it.
         if cfg.group_size > 1:
             k = k.repeat_interleave(cfg.group_size, dim=1)
             v = v.repeat_interleave(cfg.group_size, dim=1)
@@ -223,7 +223,7 @@ class TinyGPT(nn.Module):
     ) -> tuple[torch.Tensor, KVCache]:
         """Return logits for every input position, plus the updated cache.
 
-        Undecorated, so training can use it (ch14 needs a model whose output can get worse, and
+        Undecorated, so training can use it (ch15 needs a model whose output can get worse, and
         that means one that has been trained). Serving goes through ``forward``, which adds
         inference mode.
 

@@ -39,7 +39,7 @@ def test_arrivals_are_ordered():
 
 
 def test_retrieval_prompts_diverge_after_the_instruction():
-    """Chapter 21's claim: RAG shares the instruction and then stops sharing.
+    """Chapter 23's claim: RAG shares the instruction and then stops sharing.
 
     Every request opens with the same system prompt, so there is something to reuse; the retrieved
     passages differ, so there is much less of it than chat enjoys.
@@ -57,7 +57,7 @@ def test_retrieval_prompts_diverge_after_the_instruction():
 
 
 def test_agent_prompts_extend_one_another():
-    """Chapter 22's claim: an agent replays the transcript, so step n contains step n-1."""
+    """Chapter 24's claim: an agent replays the transcript, so step n contains step n-1."""
     trace = make_agent_trace(24, 8.0, seed=4)
     by_length = sorted(trace, key=lambda s: s.prompt_len)
     short, long = by_length[0], by_length[-1]
@@ -83,7 +83,7 @@ def test_completion_prompts_are_small_and_outputs_smaller():
 
 
 def test_offline_batch_has_no_arrivals():
-    """Chapter 23: there is nobody waiting, so there is no arrival process to model."""
+    """Chapter 25: there is nobody waiting, so there is no arrival process to model."""
     trace = make_offline_batch_trace(16)
     assert {s.arrival for s in trace} == {0.0}
 
@@ -97,7 +97,7 @@ def test_noisy_neighbour_burst_dominates_the_trace():
 
 
 def test_multi_tenant_trace_has_several_distinct_prefixes():
-    """Chapter 18 needs more than one prefix, or every routing policy looks identical."""
+    """Chapter 20 needs more than one prefix, or every routing policy looks identical."""
     trace = make_multi_tenant_trace(24, 8.0, seed=6)
     assert len({spec.tokens[:64] for spec in trace}) > 1
 

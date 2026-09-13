@@ -1,6 +1,6 @@
 """Train the reference model just enough for quality measurements to mean something.
 
-Chapter 14 needs a model whose output can get *worse*. Random weights cannot show that: their
+Chapter 15 needs a model whose output can get *worse*. Random weights cannot show that: their
 perplexity is already at chance, so quantising them changes a meaningless number into a different
 meaningless number.
 
@@ -11,7 +11,7 @@ and quantisation damage becomes visible. It takes a couple of minutes on a lapto
 bit-reproducible from a seed.
 
 It is not a substitute for evaluating a production model. It *is* enough to answer the question
-chapter 14 actually asks: does this quantisation scheme degrade output, and by how much relative
+chapter 15 actually asks: does this quantisation scheme degrade output, and by how much relative
 to what it saves?
 """
 

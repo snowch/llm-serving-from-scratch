@@ -1,4 +1,4 @@
-"""Chapter 13: decode attention that reads the paged cache in place."""
+"""Chapter 14: decode attention that reads the paged cache in place."""
 
 import pytest
 import torch
@@ -26,7 +26,7 @@ def _caches(n_blocks=16, n_kv_heads=2, block_size=8, head_dim=32, seed=0):
 
 
 def _reference(query, key_cache, value_cache, tables, lengths):
-    """Materialise each sequence and use the chapter 12 reference. The thing we must match."""
+    """Materialise each sequence and use the chapter 13 reference. The thing we must match."""
     n_seqs, n_heads, _ = query.shape
     n_kv_heads = key_cache.shape[1]
     group = n_heads // n_kv_heads

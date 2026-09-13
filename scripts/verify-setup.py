@@ -102,11 +102,11 @@ def check_tiers() -> None:
         memory = torch.cuda.get_device_properties(0).total_memory / 1e9
         _line(OK, f"Tier 2 (1 GPU): available — {count}x {name}, {memory:.0f} GB")
         if count >= 2:
-            _line(OK, f"Tier 3 (multi-GPU): available — {count} devices, ch17 is reproducible")
+            _line(OK, f"Tier 3 (multi-GPU): available — {count} devices, ch19 is reproducible")
         else:
-            _line(WARN, "Tier 3 (multi-GPU): one device only; ch17 needs at least two")
+            _line(WARN, "Tier 3 (multi-GPU): one device only; ch19 needs at least two")
     else:
-        _line(WARN, "Tier 2 (1 GPU): no CUDA device — ch13 and ch17 are read-only for you")
+        _line(WARN, "Tier 2 (1 GPU): no CUDA device — ch14 and ch19 are read-only for you")
         _line(WARN, "Tier 3 (multi-GPU): unavailable")
 
 

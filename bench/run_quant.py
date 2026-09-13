@@ -1,4 +1,4 @@
-"""Generate the chapter 14 results: quality, speed and memory, together.
+"""Generate the chapter 15 results: quality, speed and memory, together.
 
 Run with ``python -m bench.run_quant``. Trains the reference model first (a couple of minutes), because
 a quantisation measurement on random weights is meaningless: their perplexity is already at chance,

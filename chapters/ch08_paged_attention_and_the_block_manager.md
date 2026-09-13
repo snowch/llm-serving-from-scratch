@@ -150,7 +150,7 @@ So the honest summary of this chapter is: **paging raises the concurrency ceilin
 throughput.** Whether that is a good trade depends entirely on which one you are short of — and in
 production you are nearly always short of memory, which is why every serious engine pages. But the
 trade is only worth it once the gather stops costing this much, and making it stop is a kernel
-problem rather than a design problem. {ref}`ch13` writes that kernel.
+problem rather than a design problem. {ref}`ch14` writes that kernel.
 
 It is worth stating plainly that a book which reported only the memory win here would be
 misleading you, and a book which reported only the throughput regression would be missing the

@@ -1,6 +1,6 @@
 {
   "engine": "chunked",
-  "generated_at": "2026-09-13T19:08:48+00:00",
+  "generated_at": "2026-09-13T20:50:27+00:00",
   "hardware": {
     "platform": "Linux-6.18.44-fc-v24-x86_64-with-glibc2.39",
     "machine": "x86_64",
@@ -28,7 +28,7 @@
     "torch": "2.14.0+cu130",
     "numpy": "2.4.6"
   },
-  "code_fingerprint": "c2aa2bf7fd2ddb44",
+  "code_fingerprint": "57935ede2ceaa0ff",
   "code_sources": [
     "llmserve/engines/chunked.py",
     "llmserve/engines/paged.py",
@@ -49,15 +49,15 @@
   "summary": {
     "requests": 24,
     "completed": 24,
-    "ttft_p50": 2.424,
-    "ttft_p95": 4.4766,
-    "ttft_p99": 4.5586,
-    "itl_p50": 0.0473,
-    "itl_p95": 0.0624,
-    "output_tokens_per_second": 144.14,
-    "requests_per_second": 2.803,
-    "goodput_per_second": 0.35,
+    "ttft_p50": 2.5592,
+    "ttft_p95": 4.9948,
+    "ttft_p99": 5.1016,
+    "itl_p50": 0.0488,
+    "itl_p95": 0.0649,
+    "output_tokens_per_second": 130.42,
+    "requests_per_second": 2.537,
+    "goodput_per_second": 0.317,
     "goodput_fraction": 0.125,
-    "wall_time": 8.561
+    "wall_time": 9.461
   }
 }

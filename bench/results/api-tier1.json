@@ -1,6 +1,6 @@
 {
   "engine": "api",
-  "generated_at": "2026-09-13T19:11:52+00:00",
+  "generated_at": "2026-09-13T20:54:21+00:00",
   "hardware": {
     "platform": "Linux-6.18.44-fc-v24-x86_64-with-glibc2.39",
     "machine": "x86_64",
@@ -28,7 +28,7 @@
     "torch": "2.14.0+cu130",
     "numpy": "2.4.6"
   },
-  "code_fingerprint": "0bbead89f8554867",
+  "code_fingerprint": "d20850bb17dd888f",
   "code_sources": [
     "llmserve/api.py",
     "llmserve/engines/prefix.py"

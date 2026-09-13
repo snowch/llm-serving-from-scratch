@@ -93,7 +93,7 @@ class PagedEngine:
     def _next_waiting(self) -> int:
         """Index of the queued request to consider admitting next.
 
-        First come, first served, which is right for one caller and wrong for several: chapter 19
+        First come, first served, which is right for one caller and wrong for several: chapter 21
         overrides exactly this method and changes nothing else.
         """
         return 0
@@ -156,7 +156,7 @@ class PagedEngine:
 
         Gathering each sequence into a padded batch is the same shape as chapter 7, but the
         memory underneath is no longer reserved per sequence. The gather itself is still a copy —
-        chapter 13 removes it with a kernel that reads blocks in place.
+        chapter 14 removes it with a kernel that reads blocks in place.
         """
         while True:
             try:

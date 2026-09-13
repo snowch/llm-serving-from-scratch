@@ -75,7 +75,7 @@ the caller needs to know which happened:
 - An **end-of-sequence token** was produced — the model chose to stop.
 - The **token budget** ran out — we stopped it.
 - A **stop string** appeared in the output.
-- The **caller disconnected** — nobody is waiting for the rest ({ref}`ch24`).
+- The **caller disconnected** — nobody is waiting for the rest ({ref}`ch26`).
 
 Only the first is the model finishing a thought. Reporting a budget exhaustion as a normal
 completion is how truncated JSON reaches a caller that had no reason to suspect it.
@@ -149,7 +149,7 @@ Two requirements this places on the engine, both easy to lose later:
   any difference between two runs is a bug, not noise. This makes greedy the workhorse of every
   equivalence test in the book.
 - **Sampled decoding must be reproducible given a seed.** Otherwise optimisations that change
-  sampling — speculative decoding in {ref}`ch15` above all — cannot be checked at all, and that
+  sampling — speculative decoding in {ref}`ch17` above all — cannot be checked at all, and that
   is precisely the one whose correctness argument is subtle enough to need checking.
 
 The streaming contract gets its own tests, because the failure is silent:
@@ -167,7 +167,7 @@ We now own code that HuggingFace used to own, and that has a price:
 - **Every bug here is ours.** Hence the test suite arriving in this chapter rather than later.
 - **We will diverge from reference implementations in small ways.** Filter order, tie-breaking in
   `argmax`, float accumulation order — all defensible, none identical. When comparing against
-  another engine ({ref}`ch28`), expect to reconcile these before concluding anything.
+  another engine ({ref}`ch31`), expect to reconcile these before concluding anything.
 - **Determinism constrains optimisation.** Some fast paths reorder floating-point accumulation and
   change results in the last bits. Our equivalence tests will flag that, which is the intent, but
   it does mean some tests need tolerances rather than exact equality — and deciding which is a
@@ -197,5 +197,5 @@ all of Part III.
 
 Nucleus sampling was introduced in Holtzman et al., *The Curious Case of Neural Text
 Degeneration*, which is also the clearest explanation of why pure greedy decoding produces
-degenerate repetition. For stop-string handling and chat-template edge cases, {ref}`ch24` returns
+degenerate repetition. For stop-string handling and chat-template edge cases, {ref}`ch26` returns
 to the topic once there is an API surface to break.

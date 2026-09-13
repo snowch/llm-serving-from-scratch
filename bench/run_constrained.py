@@ -1,4 +1,4 @@
-"""Generate the chapter 16 results: does constraining work, and what does it cost?
+"""Generate the chapter 18 results: does constraining work, and what does it cost?
 
 Run with ``python -m bench.run_constrained``. Three questions, measured separately: how often
 unconstrained generation produces valid JSON, how often constrained generation does, and what

@@ -2,7 +2,7 @@
 
 ``Request`` is what a caller submits. ``RequestState`` is the engine's private bookkeeping for
 it, and it grows as the book does: chapter 8 adds block tables, chapter 9 a cache-hit count,
-chapter 15 an acceptance count. Keeping the two apart means the public interface stays stable
+chapter 17 an acceptance count. Keeping the two apart means the public interface stays stable
 while the engine is rebuilt underneath it.
 """
 
@@ -25,7 +25,7 @@ class Request:
     prompt_token_ids: list[int]
     params: SamplingParams = field(default_factory=SamplingParams)
     request_id: int = field(default_factory=lambda: next(_ids))
-    #: who submitted it (ch19). A single-tenant deployment leaves this None and never notices;
+    #: who submitted it (ch21). A single-tenant deployment leaves this None and never notices;
     #: a shared one cannot schedule fairly without it, because fairness is a property *between*
     #: callers and the engine has no other way to tell two callers apart.
     tenant: str | None = None

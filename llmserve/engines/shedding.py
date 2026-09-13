@@ -1,4 +1,4 @@
-"""Chapter 26's engine: refusing work, on purpose.
+"""Chapter 28's engine: refusing work, on purpose.
 
 An overloaded engine that accepts everything serves *nothing* well. Queues grow without bound, every
 request misses its objective, and the only signal the caller gets is that the whole service became
@@ -8,7 +8,7 @@ useful under a load spike.
 
 The hard part is not rejecting. It is deciding *when*, and the answer is not "when the CPU is busy":
 that number does not predict whether the next request will meet its objective. The two signals that
-do are the ones chapter 8 and chapter 25 already export.
+do are the ones chapter 8 and chapter 27 already export.
 """
 
 from __future__ import annotations
@@ -22,7 +22,7 @@ from llmserve.request import Request, StepOutput
 class SheddingEngine(CancellableEngine):
     """Serving with admission control, and a drain that does not cut live streams.
 
-    A rejection reuses the cancellation path from chapter 22 for one reason that matters: the caller
+    A rejection reuses the cancellation path from chapter 24 for one reason that matters: the caller
     gets a terminal message immediately. A server that refuses work by dropping connections looks,
     from the client's side, exactly like a server that has hung — and the client's retry then makes
     the overload worse, which is how a load spike becomes an outage.

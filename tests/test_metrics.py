@@ -1,4 +1,4 @@
-"""Chapter 25: the signals that explain an engine."""
+"""Chapter 27: the signals that explain an engine."""
 
 import pytest
 import torch

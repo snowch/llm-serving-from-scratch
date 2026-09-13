@@ -93,7 +93,7 @@ class ChunkedPrefillEngine(PrefixCachedEngine):
         # Re-gathering per chunk makes a chunked prefill quadratic in prompt length — a 1536-token
         # prompt at a 64-token budget would copy the whole cache twenty-four times — and that cost
         # swamps every scheduling benefit chunking is meant to deliver. A production engine avoids
-        # it by having attention read the blocks in place; until chapter 13 writes that kernel, an
+        # it by having attention read the blocks in place; until chapter 14 writes that kernel, an
         # incremental contiguous cache during prefill gets the same asymptotics.
         if state.past is None:
             state.past = (

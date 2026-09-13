@@ -72,6 +72,22 @@ jobs:
           BASE_URL: ${{ steps.pages.outputs.base_path == '/' && '' || steps.pages.outputs.base_path }}
         run: myst build --html --strict
 
+      - name: Install Chromium for the PDF build
+        # The PDF is rendered by a browser rather than by LaTeX: no TeX distribution, and the
+        # output is the same thing a reader gets by pressing Print on the HTML.
+        run: |
+          pip install playwright
+          playwright install --with-deps chromium
+
+      - name: Build the single-file PDF
+        # --no-myst because the site build above already parsed everything into _build/site.
+        run: python3 scripts/build-pdf.py --no-myst --out _build/html/llm-serving-from-scratch.pdf
+
+      - name: Drop the intermediate HTML
+        # build-pdf.py writes its assembled HTML beside the PDF. It is a build artefact, not a
+        # page, and publishing it would put a second unstyled copy of the whole book on the site.
+        run: rm -f _build/html/llm-serving-from-scratch.html
+
       - name: Copy robots.txt
         run: cp robots.txt _build/html/robots.txt
 

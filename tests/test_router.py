@@ -1,4 +1,4 @@
-"""Chapter 18: routing across replicas."""
+"""Chapter 20: routing across replicas."""
 
 import pytest
 import torch

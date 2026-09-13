@@ -1,6 +1,6 @@
 """Quantisation: storing weights and cache in fewer bits.
 
-Chapter 14. Every optimisation so far has been free in the sense that mattered — the output was
+Chapter 15. Every optimisation so far has been free in the sense that mattered — the output was
 token-identical, and only the time or memory changed. This one is different. Quantisation makes
 the model's answers measurably worse, and the entire engineering question is whether the loss is
 small enough to be worth what it buys.
@@ -55,7 +55,7 @@ def quantize_int8_per_tensor(weight: torch.Tensor) -> tuple[torch.Tensor, torch.
 
     Included deliberately. It is what you write first, it looks reasonable, and it is set by the
     single largest value anywhere in the tensor. Every other channel is then squeezed into
-    whatever levels remain. Chapter 14 measures what that costs, because "use per-channel scales"
+    whatever levels remain. Chapter 15 measures what that costs, because "use per-channel scales"
     is much more convincing as a number than as advice.
     """
     scale = weight.abs().amax().clamp(min=1e-12) / 127.0
@@ -180,7 +180,7 @@ def quantize_model(
 def quantize_kv(tensor: torch.Tensor, bits: int = 8) -> torch.Tensor:
     """Round-trip a KV cache tensor through quantisation, per head.
 
-    Often the bigger win than weight quantisation, and almost always the forgotten one: chapter 12
+    Often the bigger win than weight quantisation, and almost always the forgotten one: chapter 13
     showed KV cache is what limits concurrency at long context, and halving it doubles how many
     conversations fit.
     """

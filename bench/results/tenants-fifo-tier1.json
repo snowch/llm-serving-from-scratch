@@ -1,6 +1,6 @@
 {
   "engine": "prefix",
-  "generated_at": "2026-09-13T19:09:41+00:00",
+  "generated_at": "2026-09-13T20:51:43+00:00",
   "hardware": {
     "platform": "Linux-6.18.44-fc-v24-x86_64-with-glibc2.39",
     "machine": "x86_64",
@@ -28,7 +28,7 @@
     "torch": "2.14.0+cu130",
     "numpy": "2.4.6"
   },
-  "code_fingerprint": "712e9c2738447560",
+  "code_fingerprint": "cd5909b9234987ce",
   "code_sources": [
     "llmserve/engines/paged.py",
     "llmserve/engines/prefix.py"
@@ -46,38 +46,38 @@
   "summary": {
     "requests": 30,
     "completed": 30,
-    "ttft_p50": 2.3099,
-    "ttft_p95": 4.6061,
-    "ttft_p99": 4.7478,
-    "itl_p50": 0.0344,
-    "itl_p95": 0.038,
-    "output_tokens_per_second": 222.41,
-    "requests_per_second": 4.965,
-    "goodput_per_second": 2.151,
+    "ttft_p50": 2.4452,
+    "ttft_p95": 4.973,
+    "ttft_p99": 5.1135,
+    "itl_p50": 0.0369,
+    "itl_p95": 0.0463,
+    "output_tokens_per_second": 161.83,
+    "requests_per_second": 3.612,
+    "goodput_per_second": 1.565,
     "goodput_fraction": 0.433,
-    "wall_time": 6.043,
+    "wall_time": 8.305,
     "by_tenant": {
       "alice": {
         "requests": 6,
         "completed": 6,
-        "ttft_p50": 4.19,
-        "ttft_p95": 4.6529,
+        "ttft_p50": 4.4881,
+        "ttft_p95": 5.0046,
         "output_tokens": 96,
         "goodput_fraction": 0.333
       },
       "bob": {
         "requests": 6,
         "completed": 6,
-        "ttft_p50": 1.2169,
-        "ttft_p95": 4.6811,
+        "ttft_p50": 1.3705,
+        "ttft_p95": 5.0416,
         "output_tokens": 96,
         "goodput_fraction": 0.5
       },
       "hog": {
         "requests": 18,
         "completed": 18,
-        "ttft_p50": 2.3088,
-        "ttft_p95": 4.4384,
+        "ttft_p50": 2.4452,
+        "ttft_p95": 4.7726,
         "output_tokens": 1152,
         "goodput_fraction": 0.444
       }

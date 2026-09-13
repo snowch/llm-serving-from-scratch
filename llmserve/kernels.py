@@ -1,11 +1,11 @@
-"""Chapter 13: decode attention that reads the paged cache in place.
+"""Chapter 14: decode attention that reads the paged cache in place.
 
 Chapter 8's decode path materialises each sequence's KV cache as one contiguous tensor before every
 step, pads it into a batch, and hands that to the model. It is the simplest thing that works and it
 moves an enormous amount of memory to produce one token per sequence.
 
 The fix is to stop materialising. Attention over a block table does not need the blocks to be
-adjacent: chapter 12's online softmax processes keys one block at a time and never needs to see them
+adjacent: chapter 13's online softmax processes keys one block at a time and never needs to see them
 all at once, so the block table can be walked in place and each block read exactly once, straight
 into the accumulator.
 
@@ -67,7 +67,7 @@ def paged_decode_attention(
             kv_head = head // group
             q = query[seq, head]
 
-            # Online softmax state, exactly as chapter 12 derived it: a running maximum, a running
+            # Online softmax state, exactly as chapter 13 derived it: a running maximum, a running
             # denominator, and an accumulator that is rescaled whenever the maximum moves.
             running_max = torch.tensor(float("-inf"))
             denominator = torch.zeros(())

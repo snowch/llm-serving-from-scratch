@@ -1,4 +1,4 @@
-"""Generate the chapter 15 results: acceptance economics, and the correctness claim.
+"""Generate the chapter 17 results: acceptance economics, and the correctness claim.
 
 Run with ``python -m bench.run_speculative``. Two measurements that answer different questions.
 

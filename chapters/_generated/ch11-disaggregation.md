@@ -2,9 +2,9 @@
 
 | Configuration | TTFT p50 | TTFT p95 | ITL p50 | Output tok/s | Goodput req/s |
 |---|---|---|---|---|---|
-| ch07 One pool, 8 req/s | 0.0279s | 0.0473s | 0.0115s | 257.2 | 7.65 |
-| ch11 Two pools, 8 req/s | 0.0276s | 0.0387s | 0.0109s | 259.2 | 7.71 |
-| ch07 One pool, 16 req/s | 0.1467s | 0.57s | 0.0196s | 334.9 | 9.958 |
-| ch11 Two pools, 16 req/s | 0.1286s | 0.497s | 0.019s | 348.7 | 10.37 |
+| ch07 One pool, 8 req/s | 0.0384s | 0.0729s | 0.0147s | 249.1 | 7.407 |
+| ch11 Two pools, 8 req/s | 0.0395s | 0.1643s | 0.0177s | 237.5 | 7.062 |
+| ch07 One pool, 16 req/s | 0.2087s | 0.6551s | 0.0209s | 317.7 | 9.448 |
+| ch11 Two pools, 16 req/s | 0.1138s | 0.5393s | 0.0196s | 335.8 | 9.986 |
 
-*Conditions: TinyGPT (reference, random weights) (5,838,080 params), 4x x86_64 CPU, torch 2.14.0+cu130, poisson, prompt 64-256, output 16-48, seed 7, arrival rate 16/s, measured 2026-09-13T19:09:01+00:00.*
+*Conditions: TinyGPT (reference, random weights) (5,838,080 params), 4x x86_64 CPU, torch 2.14.0+cu130, poisson, prompt 64-256, output 16-48, seed 7, arrival rate 16/s, measured 2026-09-13T20:50:41+00:00.*

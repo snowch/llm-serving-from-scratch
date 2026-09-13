@@ -2,11 +2,11 @@
 
 | Configuration | TTFT p50 | TTFT p95 | ITL p50 | Output tok/s | Goodput req/s |
 |---|---|---|---|---|---|
-| ch08 Paged, chat 4 req/s | 0.0531s | 0.0811s | 0.0116s | 136.6 | 4.063 |
-| ch09 Prefix cache, chat 4 req/s | 0.0204s | 0.031s | 0.0086s | 136.4 | 4.057 |
-| ch08 Paged, chat 8 req/s | 0.0541s | 0.0988s | 0.0247s | 226.7 | 6.743 |
-| ch09 Prefix cache, chat 8 req/s | 0.026s | 0.0349s | 0.0122s | 251.3 | 7.474 |
-| ch08 Paged, chat 16 req/s | 0.4493s | 1.215s | 0.0276s | 248.8 | 5.551 |
-| ch09 Prefix cache, chat 16 req/s | 0.0363s | 0.2809s | 0.0168s | 369.8 | 11 |
+| ch08 Paged, chat 4 req/s | 0.0571s | 0.0937s | 0.0139s | 134.4 | 3.997 |
+| ch09 Prefix cache, chat 4 req/s | 0.0239s | 0.0352s | 0.0088s | 136.6 | 4.063 |
+| ch08 Paged, chat 8 req/s | 0.0519s | 0.0971s | 0.0244s | 225.3 | 6.7 |
+| ch09 Prefix cache, chat 8 req/s | 0.0237s | 0.0402s | 0.0127s | 249.9 | 7.431 |
+| ch08 Paged, chat 16 req/s | 0.3385s | 0.8285s | 0.0236s | 291.6 | 8.671 |
+| ch09 Prefix cache, chat 16 req/s | 0.0741s | 0.4132s | 0.0183s | 349.2 | 10.39 |
 
-*Conditions: TinyGPT (reference, random weights) (5,838,080 params), 4x x86_64 CPU, torch 2.14.0+cu130, chat: shared system prompt, unique question, output 16-48, seed 7, arrival rate 8/s, measured 2026-09-13T19:08:10+00:00.*
+*Conditions: TinyGPT (reference, random weights) (5,838,080 params), 4x x86_64 CPU, torch 2.14.0+cu130, chat: shared system prompt, unique question, output 16-48, seed 7, arrival rate 8/s, measured 2026-09-13T20:49:44+00:00.*

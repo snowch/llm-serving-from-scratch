@@ -21,7 +21,7 @@ def kv_bytes_per_token(model: ModelConfig, kv_dtype: str | None = None) -> float
 
     The factor of 2 is because we cache both K and V. ``kv_dtype`` is separate from the model's
     dtype because quantising the cache independently of the weights is a real technique
-    (chapter 14) and usually the bigger win at long context.
+    (chapter 15) and usually the bigger win at long context.
     """
     element = BYTES_PER_DTYPE[kv_dtype] if kv_dtype else model.bytes_per_element
     return 2 * model.n_layers * model.n_kv_heads * model.head_dim * element
@@ -46,7 +46,7 @@ def prefill_flops_per_token(model: ModelConfig) -> float:
     """Roughly ``2 * params`` FLOPs per prompt token: one multiply and one add per parameter.
 
     It ignores attention's quadratic term, which is negligible at short context and is not at
-    long context — chapter 21 is where that stops being a safe approximation.
+    long context — chapter 23 is where that stops being a safe approximation.
     """
     return 2.0 * model.n_params
 

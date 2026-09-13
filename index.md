@@ -7,10 +7,14 @@ short_title: Preface
 
 *Build a production inference engine, one measurement at a time.*
 
-:::{warning} Work in progress
-This book is being written in the open. Chapters marked `[DRAFT]` are outlines, not finished
-text. See the [project plan](https://github.com/snowch/llm-serving-from-scratch/blob/main/PLAN.md)
-for the full outline and delivery roadmap.
+:::{note} All 29 chapters and 5 appendices are written
+Every figure is measured on a real run and stamped with the hardware, model and library versions
+that produced it. Two chapters are explicit about hardware the default tier does not have, and say
+so in their own headers. The [project plan](https://github.com/snowch/llm-serving-from-scratch/blob/main/PLAN.md)
+has the outline and what is deliberately left to a reader with a GPU.
+
+**[Download the whole book as a PDF](llm-serving-from-scratch.pdf)** — every chapter and appendix
+in one file, built from the same source as this site.
 :::
 
 ## Why this book

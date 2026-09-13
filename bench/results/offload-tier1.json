@@ -1,0 +1,112 @@
+{
+  "engine": "offload",
+  "generated_at": "2026-09-13T20:51:12+00:00",
+  "hardware": {
+    "platform": "Linux-6.18.44-fc-v24-x86_64-with-glibc2.39",
+    "machine": "x86_64",
+    "processor": "x86_64",
+    "cpu_count": 4,
+    "device": "cpu"
+  },
+  "model": {
+    "name": "TinyGPT (reference, random weights)",
+    "params": 5838080,
+    "vocab_size": 260,
+    "n_layers": 6,
+    "n_heads": 8,
+    "n_kv_heads": 2,
+    "head_dim": 32,
+    "ffn_mult": 4,
+    "max_seq_len": 2048,
+    "rope_theta": 10000.0,
+    "norm_eps": 1e-05,
+    "dtype": "fp32",
+    "seed": 0
+  },
+  "versions": {
+    "python": "3.11.15",
+    "torch": "2.14.0+cu130",
+    "numpy": "2.4.6"
+  },
+  "code_fingerprint": "f99308b4ee1b3a59",
+  "code_sources": [
+    "llmserve/cache/offload.py",
+    "llmserve/engines/offload.py",
+    "llmserve/cache/prefix.py"
+  ],
+  "conditions": {
+    "trace": "multi-tenant, 24 requests, 192 blocks",
+    "rate_per_second": 8.0,
+    "slo": {
+      "ttft_seconds": 1.0,
+      "itl_seconds": 0.05
+    }
+  },
+  "summary": {
+    "policies": [
+      {
+        "policy": "ch09 Evict and recompute",
+        "token_reuse": 0.2101,
+        "ttft_p95": 1.5069,
+        "output_tokens_per_second": 108.63,
+        "goodput_per_second": 2.224,
+        "promotions": 0,
+        "demotions": 0,
+        "tier_hit_rate": null
+      },
+      {
+        "policy": "ch12 Demote to a second tier",
+        "token_reuse": 0.7049,
+        "ttft_p95": 3.7514,
+        "output_tokens_per_second": 82.51,
+        "goodput_per_second": 0.65,
+        "promotions": 345,
+        "demotions": 209,
+        "tier_hit_rate": 0.9375
+      }
+    ],
+    "arithmetic": {
+      "tiers": [
+        {
+          "link": "PCIe 5.0 x16",
+          "bandwidth": 64000000000.0,
+          "tokens": 2048,
+          "bytes": 268435456,
+          "fetch_seconds": 0.004194304,
+          "recompute_seconds": 0.2048,
+          "speedup": 48.828125
+        },
+        {
+          "link": "PCIe 4.0 x16",
+          "bandwidth": 32000000000.0,
+          "tokens": 2048,
+          "bytes": 268435456,
+          "fetch_seconds": 0.008388608,
+          "recompute_seconds": 0.2048,
+          "speedup": 24.4140625
+        },
+        {
+          "link": "Local NVMe",
+          "bandwidth": 7000000000.0,
+          "tokens": 2048,
+          "bytes": 268435456,
+          "fetch_seconds": 0.038347922285714285,
+          "recompute_seconds": 0.2048,
+          "speedup": 5.340576171875
+        },
+        {
+          "link": "100 GbE",
+          "bandwidth": 12500000000.0,
+          "tokens": 2048,
+          "bytes": 268435456,
+          "fetch_seconds": 0.02147483648,
+          "recompute_seconds": 0.2048,
+          "speedup": 9.536743164062502
+        }
+      ],
+      "kv_bytes_per_token": 131072,
+      "prefill_tokens_per_second": 10000.0,
+      "break_even_bytes_per_second": 1310720000.0
+    }
+  }
+}

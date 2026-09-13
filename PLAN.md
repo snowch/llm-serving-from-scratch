@@ -66,7 +66,7 @@ theory — each is introduced where needed.
   *LLM From Scratch* series on the site.
 - Not a vLLM competitor. The engine we build is a teaching artefact: clear, tested, and
   deliberately missing features, with the omissions named explicitly.
-- Not a framework comparison shoot-out, though Chapter 28 shows how to run one honestly.
+- Not a framework comparison shoot-out, though Chapter 31 shows how to run one honestly.
 
 ---
 
@@ -78,8 +78,8 @@ be handled deliberately, not ignored:
 | Existing page | Current form | Relationship to this book |
 |---|---|---|
 | `ai-eng/llmfs/L10_Inference_and_Sampling.md` | Lesson, ~350 lines | Prerequisite. Book ch04 goes deeper (numerical stability, stop strings, incremental detokenisation) and cites it. |
-| `ai-eng/llmfs-scaling/L17_Attention_Optimizations.md` | Lesson, ~420 lines, `[DRAFT]` | Surveys FlashAttention / KV cache / GQA. Book ch05, ch12, ch13 **build** them. |
-| `ai-eng/llmfs-scaling/L20_Quantization_Inference.md` | Lesson, ~390 lines, `[DRAFT]` | Shows how to *use* bitsandbytes / AutoGPTQ. Book ch14 adds KV-cache quantisation, FP8, and quality/speed/memory measurement. |
+| `ai-eng/llmfs-scaling/L17_Attention_Optimizations.md` | Lesson, ~420 lines, `[DRAFT]` | Surveys FlashAttention / KV cache / GQA. Book ch05, ch13, ch14 **build** them. |
+| `ai-eng/llmfs-scaling/L20_Quantization_Inference.md` | Lesson, ~390 lines, `[DRAFT]` | Shows how to *use* bitsandbytes / AutoGPTQ. Book ch15 adds KV-cache quantisation, FP8, and quality/speed/memory measurement. |
 | `ai-eng/llmfs-scaling/L21_Deployment_Serving.md` | Lesson, ~495 lines, `[DRAFT]` | Shows how to *call* vLLM. This book is the long-form version of that lesson — it is the single largest source of overlap. |
 
 **Recommended resolution:** keep the lessons as short, finished *summaries* and let them point
@@ -127,10 +127,10 @@ Every technique in the book is then labelled with the bound it attacks:
 | Paged attention (ch08) | KV memory fragmentation | Indirection, kernel complexity |
 | Prefix caching (ch09) | Redundant prefill compute | Cache memory, eviction policy |
 | Chunked prefill (ch10) | Prefill/decode interference | Slightly slower prefill |
-| GQA / MQA (ch12) | KV cache size | Model must be trained for it |
-| Quantisation (ch14) | Weight bytes read, KV bytes | Quality loss, calibration |
-| Speculative decoding (ch15) | Decode serialisation | Extra compute; only wins at low batch |
-| Tensor parallelism (ch17) | Weights per GPU, aggregate bandwidth | Collective communication per layer |
+| GQA / MQA (ch13) | KV cache size | Model must be trained for it |
+| Quantisation (ch15) | Weight bytes read, KV bytes | Quality loss, calibration |
+| Speculative decoding (ch17) | Decode serialisation | Extra compute; only wins at low batch |
+| Tensor parallelism (ch19) | Weights per GPU, aggregate bandwidth | Collective communication per layer |
 
 ### 3.2 The running scorecard
 
@@ -163,75 +163,78 @@ the optional/advanced chapters may run longer.
 
 | # | Chapter | What the reader does |
 |---|---|---|
-| 01 | **What an Inference Server Actually Does** | Trace the full request lifecycle: HTTP → chat template → tokenise → prefill → decode loop → detokenise → stream → disconnect. Build the naive server (~100 lines, FastAPI + HF `generate`). Establish the baseline everything is measured against. |
-| 02 | **Measuring What Matters** | Define TTFT, ITL/TPOT, e2e latency, throughput, goodput. Why means lie and percentiles don't. Build the load generator — open-loop Poisson arrivals, and why closed-loop harnesses hide overload (coordinated omission). This chapter's output is the tool used for the rest of the book. |
-| 03 | **The Arithmetic of Inference** | Derive FLOPs and bytes-moved per token. Roofline and arithmetic intensity. Compute the decode ceiling and the KV-cache budget for a real model, then verify the prediction against the naive server. The conceptual spine ([§3.1](#31-the-two-bound-model)). |
+| 1 | **What an Inference Server Actually Does** | Trace the full request lifecycle: HTTP → chat template → tokenise → prefill → decode loop → detokenise → stream → disconnect. Build the naive server (~100 lines, FastAPI + HF `generate`). Establish the baseline everything is measured against. |
+| 2 | **Measuring What Matters** | Define TTFT, ITL/TPOT, e2e latency, throughput, goodput. Why means lie and percentiles don't. Build the load generator — open-loop Poisson arrivals, and why closed-loop harnesses hide overload (coordinated omission). This chapter's output is the tool used for the rest of the book. |
+| 3 | **The Arithmetic of Inference** | Derive FLOPs and bytes-moved per token. Roofline and arithmetic intensity. Compute the decode ceiling and the KV-cache budget for a real model, then verify the prediction against the naive server. The conceptual spine ([§3.1](#31-the-two-bound-model)). |
 
 ### Part II — The Decode Loop (ch04–ch06)
 
 | # | Chapter | What the reader does |
 |---|---|---|
-| 04 | **Generating Tokens Correctly** | Implement sampling from scratch: greedy, temperature, top-k, top-p, min-p, repetition/presence penalties — numerically stable, seeded, reproducible. Stop conditions, EOS, `max_tokens`, stop strings. Incremental detokenisation: partial UTF-8 and BPE boundaries, a genuine and under-documented bug source. |
-| 05 | **The KV Cache** | Build it. Show the O(n²)→O(n) recompute saving, measure the speedup, then compute the memory cost per token and per concurrent request. Hit the memory wall on purpose — it motivates all of Part III. |
-| 06 | **Static Batching and Its Limits** | Batch multiple requests: padding, attention masks, position IDs, left vs right padding. Measure the throughput win, then measure the waste: the ragged-completion problem, where the whole batch is held hostage by its longest generation. Quantify GPU idle time. |
+| 4 | **Generating Tokens Correctly** | Implement sampling from scratch: greedy, temperature, top-k, top-p, min-p, repetition/presence penalties — numerically stable, seeded, reproducible. Stop conditions, EOS, `max_tokens`, stop strings. Incremental detokenisation: partial UTF-8 and BPE boundaries, a genuine and under-documented bug source. |
+| 5 | **The KV Cache** | Build it. Show the O(n²)→O(n) recompute saving, measure the speedup, then compute the memory cost per token and per concurrent request. Hit the memory wall on purpose — it motivates all of Part III. |
+| 6 | **Static Batching and Its Limits** | Batch multiple requests: padding, attention masks, position IDs, left vs right padding. Measure the throughput win, then measure the waste: the ragged-completion problem, where the whole batch is held hostage by its longest generation. Quantify GPU idle time. |
 
-### Part III — Building the Engine (ch07–ch11)
+### Part III — Building the Engine (ch07–ch12)
 
 The core of the book. Each chapter is a significant restructuring of the engine.
 
 | # | Chapter | What the reader does |
 |---|---|---|
-| 07 | **Continuous Batching** | Invert the loop: instead of batch-in/batch-out, `step()` over a running set, admitting and retiring sequences *per iteration* (iteration-level scheduling, after Orca). Implement the scheduler. This produces the single largest jump on the scorecard. |
-| 08 | **Paged Attention and the Block Manager** | Why a contiguous per-sequence cache fragments and over-reserves. Implement fixed-size KV blocks, block tables, a logical→physical allocator, copy-on-write for forked sequences, and preemption (recompute vs swap-to-CPU) when memory runs out. Naive PyTorch gather first, then a real kernel. |
-| 09 | **Prefix Caching** | Share KV blocks across requests via content hashing. Build up to a radix-tree cache (à la SGLang RadixAttention) with LRU eviction. Show the effect on a chat trace with a long shared system prompt — often the single biggest real-world win, and almost free. |
+| 7 | **Continuous Batching** | Invert the loop: instead of batch-in/batch-out, `step()` over a running set, admitting and retiring sequences *per iteration* (iteration-level scheduling, after Orca). Implement the scheduler. This produces the single largest jump on the scorecard. |
+| 8 | **Paged Attention and the Block Manager** | Why a contiguous per-sequence cache fragments and over-reserves. Implement fixed-size KV blocks, block tables, a logical→physical allocator, copy-on-write for forked sequences, and preemption (recompute vs swap-to-CPU) when memory runs out. Naive PyTorch gather first, then a real kernel. |
+| 9 | **Prefix Caching** | Share KV blocks across requests via content hashing. Build up to a radix-tree cache (à la SGLang RadixAttention) with LRU eviction. Show the effect on a chat trace with a long shared system prompt — often the single biggest real-world win, and almost free. |
 | 10 | **Chunked Prefill and Scheduling Policy** | Prefill and decode fight each other; a long prompt stalls every streaming response. Implement chunked prefill and a per-step token budget. Then scheduling policy: FCFS vs priority vs fair-share, admission control, and enough queueing theory to explain why p99 explodes as utilisation approaches 1. |
 | 11 | **Disaggregating Prefill and Decode** | Run prefill and decode as separate pools with a KV handoff (DistServe / Splitwise pattern). Implement a simplified version, measure the latency/complexity trade-off, and be honest about when it does *not* pay. |
+| 12 | **Offloading the KV Cache** | Eviction becomes demotion: a second, larger tier (host memory here; NVMe or a shared store in production) keyed by content rather than by block number. Measures that reuse survives a block pool too small to hold it, and computes the fetch-versus-recompute crossover that decides whether a tier pays. |
 
-### Part IV — Making the Math Cheaper (ch12–ch16)
-
-| # | Chapter | What the reader does |
-|---|---|---|
-| 12 | **Attention at Speed** | Online softmax and tiling from first principles — derive why FlashAttention is IO-aware rather than fewer-FLOPs. Then KV-shrinking architectures: MQA, GQA, sliding-window, and MLA (DeepSeek-style latent compression). What to write yourself vs what to call. |
-| 13 | **Writing a Paged Attention Kernel in Triton** *(optional)* | For readers with a GPU: implement the paged-attention decode kernel in Triton, benchmark against the PyTorch gather from ch08 and against FlashAttention. Clearly marked skippable; nothing later depends on it. |
-| 14 | **Quantisation for Serving** | Weight-only INT8/INT4 (GPTQ, AWQ), FP8 on recent hardware, and **KV-cache quantisation** — usually the bigger win for long context, and usually the one people forget. Calibration, per-channel/group scales. Measure all three axes: quality (perplexity *and* a task eval), speed, memory. |
-| 15 | **Speculative Decoding** | Draft-model speculation, self-speculation (Medusa/EAGLE), and prompt-lookup n-gram. Derive the acceptance-rate maths and show *why* rejection sampling preserves the target distribution exactly — this is the chapter's real payload. Implement one variant. Show it winning at low batch and losing at high batch. |
-| 16 | **Constrained and Structured Decoding** | JSON-schema and grammar-constrained generation via FSM-driven logit masking (Outlines/XGrammar approach). Token healing. Where the masking cost lands, why naive implementations destroy throughput, and how constraints interact with speculation and prefix caching. |
-
-### Part V — Scaling Out (ch17–ch19)
+### Part IV — Making the Math Cheaper (ch13–ch18)
 
 | # | Chapter | What the reader does |
 |---|---|---|
-| 17 | **Multi-GPU: Tensor, Pipeline and Expert Parallelism** | Where the collectives go and what they cost. Tensor parallelism for a single layer (all-reduce per block), pipeline parallelism and its bubbles, expert parallelism for MoE. NCCL basics; the things that break (head counts not divisible, uneven splits, one slow rank). When quantisation is the better answer than another GPU. |
-| 18 | **Multi-Replica: Routing, Autoscaling and Cold Starts** | Why round-robin is the wrong LLM load balancer. Cache-aware/prefix-affinity routing, least-outstanding-tokens. Autoscaling on queue depth rather than CPU. Cold starts: weight loading (safetensors mmap), warmup and CUDA-graph capture, and why the first request after a deploy is always terrible. |
-| 19 | **Multi-Tenancy and LoRA at Serving Time** | Serve many adapters on one base model with batched adapter application (S-LoRA pattern). Per-tenant fairness, quotas, rate limits, and noisy-neighbour isolation in a shared KV cache. |
+| 13 | **Attention at Speed** | Online softmax and tiling from first principles — derive why FlashAttention is IO-aware rather than fewer-FLOPs. Then KV-shrinking architectures: MQA, GQA, sliding-window, and MLA (DeepSeek-style latent compression). What to write yourself vs what to call. |
+| 14 | **Writing a Paged Attention Kernel in Triton** *(optional)* | For readers with a GPU: implement the paged-attention decode kernel in Triton, benchmark against the PyTorch gather from ch08 and against FlashAttention. Clearly marked skippable; nothing later depends on it. |
+| 15 | **Quantisation for Serving** | Weight-only INT8/INT4 (GPTQ, AWQ), FP8 on recent hardware, and **KV-cache quantisation** — usually the bigger win for long context, and usually the one people forget. Calibration, per-channel/group scales. Measure all three axes: quality (perplexity *and* a task eval), speed, memory. |
+| 16 | **Bounding the Context** | The cache stops growing with the conversation: sliding windows, attention sinks, and the position question that comes with them. The first chapter whose optimisation can change what the model says, so it is measured on perplexity — on both sides of the trained context length, where the answer reverses. |
+| 17 | **Speculative Decoding** | Draft-model speculation, self-speculation (Medusa/EAGLE), and prompt-lookup n-gram. Derive the acceptance-rate maths and show *why* rejection sampling preserves the target distribution exactly — this is the chapter's real payload. Implement one variant. Show it winning at low batch and losing at high batch. |
+| 18 | **Constrained and Structured Decoding** | JSON-schema and grammar-constrained generation via FSM-driven logit masking (Outlines/XGrammar approach). Token healing. Where the masking cost lands, why naive implementations destroy throughput, and how constraints interact with speculation and prefix caching. |
 
-### Part VI — Serving Patterns by Workload (ch20–ch23)
+### Part V — Scaling Out (ch19–ch21)
+
+| # | Chapter | What the reader does |
+|---|---|---|
+| 19 | **Multi-GPU: Tensor, Pipeline and Expert Parallelism** | Where the collectives go and what they cost. Tensor parallelism for a single layer (all-reduce per block), pipeline parallelism and its bubbles, expert parallelism for MoE. NCCL basics; the things that break (head counts not divisible, uneven splits, one slow rank). When quantisation is the better answer than another GPU. |
+| 20 | **Multi-Replica: Routing, Autoscaling and Cold Starts** | Why round-robin is the wrong LLM load balancer. Cache-aware/prefix-affinity routing, least-outstanding-tokens. Autoscaling on queue depth rather than CPU. Cold starts: weight loading (safetensors mmap), warmup and CUDA-graph capture, and why the first request after a deploy is always terrible. |
+| 21 | **Multi-Tenancy and LoRA at Serving Time** | Serve many adapters on one base model with batched adapter application (S-LoRA pattern). Per-tenant fairness, quotas, rate limits, and noisy-neighbour isolation in a shared KV cache. |
+
+### Part VI — Serving Patterns by Workload (ch22–ch25)
 
 The same engine, tuned four different ways. The point of the part: there is no single optimal
 configuration, and the workload's length distribution decides almost everything.
 
 | # | Chapter | Workload characteristics and what changes |
 |---|---|---|
-| 20 | **Chat and Assistants** | Long shared system prompts, multi-turn growth, human-perceptible streaming. Prefix caching and session affinity dominate; ITL matters more than throughput. |
-| 21 | **RAG and Long Context** | Prefill-heavy, enormous prompts, KV pressure. Chunked prefill + prefix cache + KV quantisation together. Co-serving embedding and reranker models on the same hardware. |
-| 22 | **Agents and Tool Use** | Many short, highly repetitive calls; cancellation is constant; tail latency amplifies across a chain of N calls. Prefix reuse and cheap cancellation are worth more than raw throughput. |
-| 23 | **Code Completion and Offline Batch** | The two extremes: fill-in-the-middle completion needing single-digit-millisecond TTFT and aggressive speculation, versus offline batch inference where latency is irrelevant and only tokens-per-dollar counts. |
+| 22 | **Chat and Assistants** | Long shared system prompts, multi-turn growth, human-perceptible streaming. Prefix caching and session affinity dominate; ITL matters more than throughput. |
+| 23 | **RAG and Long Context** | Prefill-heavy, enormous prompts, KV pressure. Chunked prefill + prefix cache + KV quantisation together. Co-serving embedding and reranker models on the same hardware. |
+| 24 | **Agents and Tool Use** | Many short, highly repetitive calls; cancellation is constant; tail latency amplifies across a chain of N calls. Prefix reuse and cheap cancellation are worth more than raw throughput. |
+| 25 | **Code Completion and Offline Batch** | The two extremes: fill-in-the-middle completion needing single-digit-millisecond TTFT and aggressive speculation, versus offline batch inference where latency is irrelevant and only tokens-per-dollar counts. |
 
-### Part VII — Running It in Production (ch24–ch28)
+### Part VII — Running It in Production (ch26–ch31)
 
 | # | Chapter | What the reader does |
 |---|---|---|
-| 24 | **The API Surface** | OpenAI-compatible `/v1/chat/completions`, SSE streaming, usage accounting, tool-call plumbing. Client disconnect and cancellation — wasted GPU nobody notices. Backpressure, timeouts, request size limits. Chat templates and the many ways they are silently wrong. |
-| 25 | **Observability for Serving Engines** | The signals that explain the engine, not just the box: queue depth, KV utilisation, preemption rate, batch-size histogram, prefix-cache hit rate, speculation acceptance rate, TTFT/ITL histograms. OpenTelemetry traces across the request lifecycle. What a good dashboard looks like, and SLO burn-rate alerting. |
-| 26 | **Reliability and Operations** | Load shedding and graceful degradation. Draining and rolling upgrades without dropping in-flight streams. Failure modes: OOM under a length spike, NaN/inf, GPU fault, and the worst one — silent quality regression after a config change. Runbook-shaped. |
-| 27 | **Cost and Capacity Planning** | Derive $/million tokens from hardware cost, utilisation and token mix. The batch-size vs SLO frontier and where to sit on it. Hardware selection, spot/preemptible economics, and an honest build-vs-buy comparison against hosted APIs. Ends with a capacity model the reader can reuse. |
-| 28 | **Benchmarking and Verifying a Serving Stack** | How to run a comparison nobody can dismiss: trace-driven load with realistic length distributions, warmup, statistical reporting, version pinning. Correctness verification — output-distribution equivalence tests, not eyeballing. Then a fair run of our engine against vLLM, SGLang, TGI and TensorRT-LLM. |
+| 26 | **The API Surface** | OpenAI-compatible `/v1/chat/completions`, SSE streaming, usage accounting, tool-call plumbing. Client disconnect and cancellation — wasted GPU nobody notices. Backpressure, timeouts, request size limits. Chat templates and the many ways they are silently wrong. |
+| 27 | **Observability for Serving Engines** | The signals that explain the engine, not just the box: queue depth, KV utilisation, preemption rate, batch-size histogram, prefix-cache hit rate, speculation acceptance rate, TTFT/ITL histograms. OpenTelemetry traces across the request lifecycle. What a good dashboard looks like, and SLO burn-rate alerting. |
+| 28 | **Reliability and Operations** | Load shedding and graceful degradation. Draining and rolling upgrades without dropping in-flight streams. Failure modes: OOM under a length spike, NaN/inf, GPU fault, and the worst one — silent quality regression after a config change. Runbook-shaped. |
+| 29 | **Cost and Capacity Planning** | Derive $/million tokens from hardware cost, utilisation and token mix. The batch-size vs SLO frontier and where to sit on it. Hardware selection, spot/preemptible economics, and an honest build-vs-buy comparison against hosted APIs. Ends with a capacity model the reader can reuse. |
+| 30 | **Choosing a Serving Framework** | A capability rubric built from this book's own mechanisms — one row per chapter — plus how to fill it in without trusting a README. Deliberately contains no vendor comparison table: those cannot be verified here and are wrong within months, so the deliverable is the sheet and the method. |
+| 31 | **Benchmarking and Verifying a Serving Stack** | How to run a comparison nobody can dismiss: trace-driven load with realistic length distributions, warmup, statistical reporting, version pinning. Correctness verification — output-distribution equivalence tests, not eyeballing. Then a fair run of our engine against vLLM, SGLang, TGI and TensorRT-LLM. |
 
 ### Capstone
 
 | # | Chapter | What the reader does |
 |---|---|---|
-| 29 | **The Finished Engine** | The full scorecard from ch01 to now, in one table. A design retrospective: what we built, what we deliberately did not (multi-node, MoE routing at scale, custom CUDA), and what each omission would cost. Then a guided map into vLLM, SGLang and TensorRT-LLM source, showing where each chapter's concept lives in each codebase — so the reader can read the real thing fluently. |
+| 32 | **The Finished Engine** | The full scorecard from ch01 to now, in one table. A design retrospective: what we built, what we deliberately did not (multi-node, MoE routing at scale, custom CUDA), and what each omission would cost. Then a guided map into vLLM, SGLang and TensorRT-LLM source, showing where each chapter's concept lives in each codebase — so the reader can read the real thing fluently. |
 
 ### Appendices
 
@@ -273,7 +276,7 @@ about GPU serving whose examples nobody can run is a blog post with extra steps.
   meaningless text, which is fine: every quantity this book measures depends on the *shape* of
   the computation, not the values in the weights. A byte-level tokenizer comes with it, which
   also makes ch04's incremental-detokenisation bug concrete rather than hypothetical.
-- **Where output quality genuinely matters — ch14's quantisation chapter above all — a trained
+- **Where output quality genuinely matters — ch15's quantisation chapter above all — a trained
   model is required, and that chapter says so.** Those sections need Hugging Face access.
 - Model weights are never committed.
 
@@ -297,19 +300,19 @@ llm-serving-from-scratch/
 │   ├── cache/                   # ch05, ch08: KV cache, blocks, allocator
 │   ├── scheduler/               # ch07, ch10: continuous batching, policy
 │   ├── prefix/                  # ch09: hash + radix prefix cache
-│   ├── attention/               # ch12, ch13: paged attention backends
-│   ├── quant/                   # ch14
-│   ├── speculative/             # ch15
-│   ├── constrain/               # ch16
-│   ├── parallel/                # ch17
+│   ├── attention/               # ch13, ch14: paged attention backends
+│   ├── quant/                   # ch15
+│   ├── speculative/             # ch17
+│   ├── constrain/               # ch18
+│   ├── parallel/                # ch19
 │   ├── engine.py                # the step() loop
-│   └── server/                  # ch24: OpenAI-compatible API, SSE
+│   └── server/                  # ch26: OpenAI-compatible API, SSE
 ├── bench/                       # ch02: load generator, traces, scorecard
 │   ├── harness.py
 │   ├── traces/
 │   └── results/*.json           # committed, hardware-stamped
 ├── tests/                       # equivalence + unit tests (CPU, run in CI)
-├── chapters/                    # ch01.md … ch29.md
+├── chapters/                    # ch01.md … ch32.md
 ├── appendices/
 └── ...                          # see §8
 ```
@@ -375,7 +378,7 @@ cache, and the sitemap script are all already solved and proven in
 introducing a second publishing stack to maintain.
 
 **What this changes versus the Quarto alternative** — worth naming so nothing surprises us at
-chapter 12:
+chapter 13:
 
 | Need | How it is met under MyST |
 |---|---|
@@ -526,7 +529,7 @@ has, per [§2](#2-relationship-to-existing-snowchgithubio-content)):
   serving is where this series ends and the book begins.
 - `ai-eng/llmfs-scaling/L21_Deployment_Serving.md` — callout at the top linking to the book.
 - `ai-eng/llmfs-scaling/L20_Quantization_Inference.md` and `L17_Attention_Optimizations.md` —
-  same callout, pointing at ch14 and ch12/ch13 respectively.
+  same callout, pointing at ch15 and ch13/ch14 respectively.
 
 **Not needed:** an entry in `books.md`. That table is for external/older guides; the major
 books each get their own landing page and TOC entry.
@@ -542,17 +545,17 @@ in-progress work `[DRAFT]`, so shipping incrementally is consistent with existin
 of the order things were built in rather than a plan. Two things promised here were not delivered as
 promised, and both are stated in the chapters themselves rather than quietly dropped:
 
-- **ch13 contains no Triton kernel.** It contains the paged-decode algorithm in PyTorch, verified
-  against the ch12 reference on every boundary case, the arithmetic that says the ch08 gather halves
+- **ch14 contains no Triton kernel.** It contains the paged-decode algorithm in PyTorch, verified
+  against the ch13 reference on every boundary case, the arithmetic that says the ch08 gather halves
   the decode ceiling, and a precise account of the Triton translation. A kernel cannot be compiled or
   run without a GPU, and shipping an unverified kernel would contradict §6.3 — the whole point of
   which is that unverified performance claims are worthless.
-- **ch28 contains no framework comparison.** It contains the methodology, the coordinated-omission
+- **ch31 contains no framework comparison.** It contains the methodology, the coordinated-omission
   demonstration, and an engine-agnostic harness that measures anything implementing three methods.
   A fair run against vLLM, SGLang, TGI and TensorRT-LLM requires each of them tuned on the same GPU;
   run here it would compare four engines' CPU fallback paths, which measures nothing.
 
-ch17 is delivered in a third form: the tensor-parallel split is built and proved *exactly correct* on
+ch19 is delivered in a third form: the tensor-parallel split is built and proved *exactly correct* on
 one device, and the collective cost is computed from the model's shape and the link's bandwidth and
 latency rather than timed. That is a stronger result than a timing on the wrong hardware, and the
 chapter says which half is which.
@@ -562,10 +565,10 @@ chapter says which half is which.
 | **v0.1 — Foundations** ✅ | Repo scaffolding, CI, Pages deploy · index/preface · ch01–ch03 written with measured figures · `bench/` harness · `llmserve` model/tokenizer/sampling/engines · 42 tests | Establishes the baseline *and* the scorecard. Nothing later can be written credibly without the harness. |
 | **v0.2 — The Decode Loop** | ch04–ch06 · `llmserve` KV cache + static batching · equivalence tests · first three scorecard rows | Proves the measure-every-chapter format works end to end at small scale. |
 | **v0.3 — The Engine** | ch07–ch10 · continuous batching, paged blocks, prefix cache, chunked prefill · checkpoint tags | The centre of gravity. At this point the book is already the most useful thing on the site about serving. |
-| **v0.4 — Cheaper Math** | ch12, ch14, ch15 · quantisation + speculation · GPU-tier results published | First release with meaningful GPU numbers; needs the Tier 2 machine. |
-| **v0.5 — API and Operations** | ch24–ch26 · OpenAI-compatible server, observability, reliability | Pulled forward ahead of Parts V–VI: a reader with the engine plus an API plus a dashboard can actually deploy something. Highest practical value per page. |
-| **v0.6 — Scale and Patterns** | ch11, ch13, ch16–ch23 · disaggregation, Triton, constrained decoding, multi-GPU, workload patterns | The advanced and specialist material, once the core arc is solid. |
-| **v1.0 — Complete** | ch27–ch29 · appendices A–E · full scorecard · PDF export if it earns its keep | Costing, honest benchmarking, and the capstone retrospective land last because they summarise everything before them. The framework comparison moved to a reader exercise; see the status note above. |
+| **v0.4 — Cheaper Math** | ch13, ch15, ch17 · quantisation + speculation · GPU-tier results published | First release with meaningful GPU numbers; needs the Tier 2 machine. |
+| **v0.5 — API and Operations** | ch26–ch28 · OpenAI-compatible server, observability, reliability | Pulled forward ahead of Parts V–VI: a reader with the engine plus an API plus a dashboard can actually deploy something. Highest practical value per page. |
+| **v0.6 — Scale and Patterns** | ch11, ch14, ch18–ch25 · disaggregation, Triton, constrained decoding, multi-GPU, workload patterns | The advanced and specialist material, once the core arc is solid. |
+| **v1.0 — Complete** | ch29–ch32 · appendices A–E · full scorecard · PDF export if it earns its keep | Costing, honest benchmarking, and the capstone retrospective land last because they summarise everything before them. The framework comparison moved to a reader exercise; see the status note above. |
 
 **Rationale for the ordering:** Parts are written in dependency order except that Part VII's
 API/observability chapters are pulled ahead of Parts V–VI. That is deliberate — an engine with
@@ -633,9 +636,9 @@ All four opening decisions are now made.
 | # | Decision | Outcome |
 |---|---|---|
 | 1 | Toolchain | **Jupyter Book 2 / MyST** (`mystmd`) — same stack as the rest of the site, and its Actions workflow is already proven ([§7](#7-toolchain), [§9](#9-build-and-publishing-pipeline)). The cost is book-quality PDF and native EPUB. |
-| 2 | Hardware floor | **CPU-first, GPU optional** ([§5](#5-hardware-and-execution-strategy)). Only ch13 and ch17 require a GPU, and nothing depends on them. |
+| 2 | Hardware floor | **CPU-first, GPU optional** ([§5](#5-hardware-and-execution-strategy)). Only ch14 and ch19 require a GPU, and nothing depends on them. |
 | 3 | Fate of the L17/L20/L21 drafts | **Finish them as ~200-line summaries that link into the book** ([§2](#2-relationship-to-existing-snowchgithubio-content)). Preserves inbound links and avoids maintaining the same material at two depths. |
-| 4 | Triton kernel chapter (ch13) | **Included, clearly optional.** The most genuinely *from scratch* chapter in the book; nothing later depends on it. |
+| 4 | Triton kernel chapter (ch14) | **Included, clearly optional.** The most genuinely *from scratch* chapter in the book; nothing later depends on it. |
 
 Two smaller ones remain, and neither blocks authoring:
 
@@ -666,10 +669,10 @@ Two smaller ones remain, and neither blocks authoring:
 4. ~~Build `bench/harness.py`, then ch01–ch03, as v0.1.~~ **Done**, and then everything after it.
    All 29 chapters and 5 appendices are written; `./scripts/ci-check.sh` is clean, 229 tests pass,
    and every figure traces to a stamped result in `bench/results/`.
-5. Revisit the three `llmfs-scaling` lessons per decision 3 now that ch12/ch14 exist to link to.
-6. **On Tier 2/3 hardware**, in priority order: write ch13's Triton kernel against the reference and
-   tests already in the repo; time ch17's tensor-parallel split rather than computing it; and run
-   ch28's methodology against vLLM, SGLang, TGI and TensorRT-LLM. Each of the three has its
+5. Revisit the three `llmfs-scaling` lessons per decision 3 now that ch13/ch15 exist to link to.
+6. **On Tier 2/3 hardware**, in priority order: write ch14's Triton kernel against the reference and
+   tests already in the repo; time ch19's tensor-parallel split rather than computing it; and run
+   ch31's methodology against vLLM, SGLang, TGI and TensorRT-LLM. Each of the three has its
    specification, its harness and its verification suite committed; what is missing is only the
    hardware.
 7. Re-measure Parts II–III on a GPU. Every committed figure is CPU-only, and while the *shape* of

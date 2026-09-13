@@ -1,4 +1,4 @@
-"""Generate the chapter 24 results: what the API layer does to the engine underneath it.
+"""Generate the chapter 26 results: what the API layer does to the engine underneath it.
 
 Run with ``python -m bench.run_api``. The measurement is about chat templates, because that is the
 part of the API surface with a silent, expensive failure mode: a template that varies per request —

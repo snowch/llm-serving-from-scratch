@@ -48,8 +48,8 @@ That asymmetry explains almost everything that follows, so it is worth stating a
 
 Two consequences that will keep recurring:
 
-- Making decode faster usually means **moving fewer bytes** — smaller weights ({ref}`ch14`),
-  a smaller KV cache ({ref}`ch12`), or reading the same weights for more sequences at once
+- Making decode faster usually means **moving fewer bytes** — smaller weights ({ref}`ch15`),
+  a smaller KV cache ({ref}`ch13`), or reading the same weights for more sequences at once
   ({ref}`ch07`).
 - Adding sequences to a decode batch is nearly free. The weights are read once per step whatever
   the batch size, so the second sequence costs only its own KV cache. **This is the single most
@@ -133,7 +133,7 @@ output.
 
 The arithmetic is a model, and it ignores:
 
-- **Attention's quadratic term.** Fine at 96 tokens, badly wrong at 32k. {ref}`ch21` is where this
+- **Attention's quadratic term.** Fine at 96 tokens, badly wrong at 32k. {ref}`ch23` is where this
   stops being safe.
 - **Kernel launch and framework overhead.** At this model size a meaningful share of each step is
   Python and dispatch, not memory traffic. That is one reason the predicted penalty did not

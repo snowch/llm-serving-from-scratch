@@ -32,7 +32,7 @@ Three tiers, each roughly an order of magnitude faster and smaller than the one 
 | SRAM (shared memory / L1) | ~100–250 KB per SM | ~10–20 TB/s | a tile of a matrix, mid-computation |
 | HBM (device memory) | 24–192 GB | ~1–8 TB/s | model weights, KV cache, activations |
 
-The gap between SRAM and HBM is the entire reason {ref}`ch12` exists. FlashAttention does not reduce
+The gap between SRAM and HBM is the entire reason {ref}`ch13` exists. FlashAttention does not reduce
 the number of floating-point operations attention performs — it performs slightly more — and it is
 much faster anyway, because it avoids writing the attention score matrix to HBM and reading it back.
 An algorithm that does more arithmetic and less memory traffic wins, and that sentence is the most
@@ -51,7 +51,7 @@ sides serially, which is why GPU code avoids data-dependent branching.
 warp waits on HBM, another computes. Low occupancy usually means a kernel asked for too much shared
 memory or too many registers per thread.
 
-This is as deep as serving goes. If you are writing kernels — {ref}`ch13` — you will need more than
+This is as deep as serving goes. If you are writing kernels — {ref}`ch14` — you will need more than
 this, and the Triton documentation is a better place to get it than any summary here. If you are
 choosing hardware or debugging a throughput number, occupancy is almost never the answer; the
 batch size, the KV budget or the scheduler almost always is.
@@ -62,7 +62,7 @@ Tensor cores are fixed-function matrix-multiply units, and they are why FLOPS fi
 wildly with precision on one device. A modern accelerator supports some subset of fp32, tf32, fp16,
 bf16, fp8 and int8, at roughly doubling throughput as the width halves.
 
-Two consequences for {ref}`ch14`:
+Two consequences for {ref}`ch15`:
 
 - **A quantised format is only fast if the hardware has a matching instruction.** INT4 weights are
   usually dequantised to fp16 before the multiply, so INT4's win is memory, not arithmetic. Sold as
@@ -80,7 +80,7 @@ Two consequences for {ref}`ch14`:
 |---|---|---|
 | PCIe 4.0 x16 | ~32 GB/s | host-to-device transfers, and GPU-to-GPU without NVLink |
 | PCIe 5.0 x16 | ~64 GB/s | as above |
-| NVLink (recent) | ~400–900 GB/s | tensor parallelism ({ref}`ch17`), KV handoff ({ref}`ch11`) |
+| NVLink (recent) | ~400–900 GB/s | tensor parallelism ({ref}`ch19`), KV handoff ({ref}`ch11`) |
 | 100 GbE | ~12.5 GB/s | cross-node anything |
 
 The interconnect decides which architectures in Part III and Part V are viable. Tensor parallelism
@@ -92,12 +92,12 @@ that chapter's table is arithmetic over bandwidth rather than a measurement.
 ## MIG and partitioning
 
 Multi-Instance GPU splits one device into hardware-isolated slices with their own memory and SMs. It
-is worth knowing about as the *alternative* to {ref}`ch19`'s software multi-tenancy, and the trade is
+is worth knowing about as the *alternative* to {ref}`ch21`'s software multi-tenancy, and the trade is
 clean: MIG gives genuine isolation — a noisy neighbour physically cannot touch your slice — and gives
 up all sharing. Each slice has its own copy of the weights and its own KV budget, so a fleet of
 slices serves far fewer concurrent sequences than one undivided device running a shared engine.
 
-Use MIG when isolation is a requirement rather than a preference. Use {ref}`ch19` when utilisation is.
+Use MIG when isolation is a requirement rather than a preference. Use {ref}`ch21` when utilisation is.
 
 ## The spec sheet, ranked
 
@@ -109,8 +109,8 @@ When comparing accelerators for serving, in order:
    batch size, and therefore throughput. Capacity buys concurrency, and concurrency is how a
    memory-bound engine gets throughput at all.
 3. **Interconnect bandwidth**, if you will use more than one device.
-4. **FLOPS at your serving dtype.** Binds prefill, which matters enormously for {ref}`ch21`'s
-   workload and barely at all for {ref}`ch20`'s.
+4. **FLOPS at your serving dtype.** Binds prefill, which matters enormously for {ref}`ch23`'s
+   workload and barely at all for {ref}`ch22`'s.
 5. Everything else.
 
 A concrete way to use this: before buying or renting anything, compute the decode ceiling from

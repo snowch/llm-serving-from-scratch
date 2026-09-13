@@ -1,4 +1,4 @@
-"""Generate the chapter 25 results: which signal moves first, and what instrumentation costs.
+"""Generate the chapter 27 results: which signal moves first, and what instrumentation costs.
 
 Run with ``python -m bench.run_observability``. The engine is driven into overload while sampling
 itself every step, so the ordering of the signals is visible: the claim is that queue depth rises

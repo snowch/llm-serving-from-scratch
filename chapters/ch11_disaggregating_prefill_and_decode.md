@@ -36,7 +36,7 @@ The consequences are appealing:
 
 - **No interference.** A long prefill cannot stall a streaming user, because it is not on the same
   device. The whole of {ref}`ch10` becomes unnecessary.
-- **Independent scaling.** Prefill-heavy traffic ({ref}`ch21`'s RAG) and decode-heavy traffic can
+- **Independent scaling.** Prefill-heavy traffic ({ref}`ch23`'s RAG) and decode-heavy traffic can
   be scaled separately instead of by one batch-size dial.
 - **Hardware specialisation.** Buy compute for the prefill pool and memory bandwidth for the
   decode pool, rather than compromising on both.
@@ -132,7 +132,7 @@ would have been obviously absurd, and the papers would never have been written.
 
 Part III has taken the engine from one request at a time to a scheduler with paged memory, prefix
 reuse and an explicit prefill policy. Every remaining inefficiency is now in the mathematics
-itself rather than in how work is organised. {ref}`ch12` turns to attention: how to compute it
+itself rather than in how work is organised. {ref}`ch13` turns to attention: how to compute it
 with far less memory traffic, and how the architectures that shrink the KV cache change the
 arithmetic this entire part has been fighting.
 

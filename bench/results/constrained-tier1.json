@@ -1,6 +1,6 @@
 {
   "engine": "constrained",
-  "generated_at": "2026-09-13T19:25:53+00:00",
+  "generated_at": "2026-09-13T21:08:11+00:00",
   "hardware": {
     "platform": "Linux-6.18.44-fc-v24-x86_64-with-glibc2.39",
     "machine": "x86_64",
@@ -28,7 +28,7 @@
     "torch": "2.14.0+cu130",
     "numpy": "2.4.6"
   },
-  "code_fingerprint": "8099162b5fc64f74",
+  "code_fingerprint": "ce543b515b316015",
   "code_sources": [
     "llmserve/constrain.py",
     "bench/train_tiny.py"
@@ -48,25 +48,25 @@
       "per_mask": [
         {
           "vocab_size": 260,
-          "microseconds_per_mask": 337.5
+          "microseconds_per_mask": 345.2
         },
         {
           "vocab_size": 32000,
-          "microseconds_per_mask": 337.1
+          "microseconds_per_mask": 341.6
         },
         {
           "vocab_size": 128256,
-          "microseconds_per_mask": 349.6
+          "microseconds_per_mask": 355.4
         }
       ]
     },
     "cost": {
       "cached masks": {
-        "seconds": 11.085,
+        "seconds": 11.957,
         "masks_built": 3
       },
       "rebuilt every step": {
-        "seconds": 11.236,
+        "seconds": 11.922,
         "masks_built": 2205
       }
     }

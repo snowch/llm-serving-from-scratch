@@ -1,6 +1,6 @@
 {
   "engine": "chat-patterns",
-  "generated_at": "2026-09-13T19:10:29+00:00",
+  "generated_at": "2026-09-13T20:52:41+00:00",
   "hardware": {
     "platform": "Linux-6.18.44-fc-v24-x86_64-with-glibc2.39",
     "machine": "x86_64",
@@ -28,7 +28,7 @@
     "torch": "2.14.0+cu130",
     "numpy": "2.4.6"
   },
-  "code_fingerprint": "688f8ea923daf213",
+  "code_fingerprint": "3a0c68366c941029",
   "code_sources": [
     "llmserve/engines/prefix.py",
     "llmserve/engines/paged.py"
@@ -47,74 +47,74 @@
         "turn": 1,
         "prompt_tokens": 576.0,
         "reuse": 0.7639,
-        "ms_per_request": 71.8
+        "ms_per_request": 81.9
       },
       {
         "turn": 2,
         "prompt_tokens": 656.0,
         "reuse": 0.878,
-        "ms_per_request": 57.5
+        "ms_per_request": 70.3
       },
       {
         "turn": 3,
         "prompt_tokens": 736.0,
         "reuse": 0.8913,
-        "ms_per_request": 59.0
+        "ms_per_request": 72.2
       },
       {
         "turn": 4,
         "prompt_tokens": 816.0,
         "reuse": 0.902,
-        "ms_per_request": 73.5
+        "ms_per_request": 67.0
       },
       {
         "turn": 5,
         "prompt_tokens": 896.0,
         "reuse": 0.9107,
-        "ms_per_request": 68.1
+        "ms_per_request": 78.6
       },
       {
         "turn": 6,
         "prompt_tokens": 976.0,
         "reuse": 0.918,
-        "ms_per_request": 85.0
+        "ms_per_request": 93.5
       }
     ],
     "batch": [
       {
         "max_batch_size": 1,
-        "itl_p50": 0.0059,
-        "itl_p95": 0.0075,
-        "output_tokens_per_second": 155.31,
-        "goodput_fraction": 0.417
+        "itl_p50": 0.006,
+        "itl_p95": 0.0067,
+        "output_tokens_per_second": 153.68,
+        "goodput_fraction": 0.375
       },
       {
         "max_batch_size": 2,
-        "itl_p50": 0.0078,
-        "itl_p95": 0.0082,
-        "output_tokens_per_second": 227.82,
-        "goodput_fraction": 1.0
+        "itl_p50": 0.0081,
+        "itl_p95": 0.0087,
+        "output_tokens_per_second": 210.12,
+        "goodput_fraction": 0.917
       },
       {
         "max_batch_size": 4,
-        "itl_p50": 0.0112,
-        "itl_p95": 0.0152,
-        "output_tokens_per_second": 249.95,
-        "goodput_fraction": 1.0
+        "itl_p50": 0.0137,
+        "itl_p95": 0.1163,
+        "output_tokens_per_second": 113.65,
+        "goodput_fraction": 0.542
       },
       {
         "max_batch_size": 8,
-        "itl_p50": 0.0137,
-        "itl_p95": 0.0166,
-        "output_tokens_per_second": 275.99,
+        "itl_p50": 0.0145,
+        "itl_p95": 0.0183,
+        "output_tokens_per_second": 277.53,
         "goodput_fraction": 1.0
       },
       {
         "max_batch_size": 16,
-        "itl_p50": 0.0137,
-        "itl_p95": 0.0167,
-        "output_tokens_per_second": 278.66,
-        "goodput_fraction": 1.0
+        "itl_p50": 0.0203,
+        "itl_p95": 0.0232,
+        "output_tokens_per_second": 266.28,
+        "goodput_fraction": 0.458
       }
     ]
   }

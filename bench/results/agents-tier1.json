@@ -1,6 +1,6 @@
 {
   "engine": "agents",
-  "generated_at": "2026-09-13T19:35:16+00:00",
+  "generated_at": "2026-09-13T20:53:24+00:00",
   "hardware": {
     "platform": "Linux-6.18.44-fc-v24-x86_64-with-glibc2.39",
     "machine": "x86_64",
@@ -28,7 +28,7 @@
     "torch": "2.14.0+cu130",
     "numpy": "2.4.6"
   },
-  "code_fingerprint": "1035968bf234a1f7",
+  "code_fingerprint": "1c186452a77938a4",
   "code_sources": [
     "llmserve/engines/cancel.py",
     "llmserve/engines/prefix.py"
@@ -45,46 +45,46 @@
     "per_call": {
       "requests": 24,
       "completed": 24,
-      "ttft_p50": 0.4247,
-      "ttft_p95": 0.9567,
-      "ttft_p99": 0.9987,
-      "itl_p50": 0.0528,
-      "itl_p95": 0.0571,
-      "output_tokens_per_second": 128.29,
-      "requests_per_second": 8.211,
-      "goodput_per_second": 0.342,
-      "goodput_fraction": 0.042,
-      "wall_time": 2.923
+      "ttft_p50": 0.3786,
+      "ttft_p95": 0.8344,
+      "ttft_p99": 0.8634,
+      "itl_p50": 0.0491,
+      "itl_p95": 0.0509,
+      "output_tokens_per_second": 136.35,
+      "requests_per_second": 8.726,
+      "goodput_per_second": 2.909,
+      "goodput_fraction": 0.333,
+      "wall_time": 2.75
     },
     "token_reuse": 0.9444,
     "chains": [
       {
         "calls": 1,
-        "p50": 1.0634,
-        "p95": 1.69,
-        "p99": 1.7179,
-        "p95_over_p50": 1.589
+        "p50": 1.0182,
+        "p95": 1.5361,
+        "p99": 1.545,
+        "p95_over_p50": 1.509
       },
       {
         "calls": 4,
-        "p50": 4.5077,
-        "p95": 5.5971,
-        "p99": 6.0391,
-        "p95_over_p50": 1.242
+        "p50": 4.1171,
+        "p95": 5.0811,
+        "p99": 5.4601,
+        "p95_over_p50": 1.234
       },
       {
         "calls": 8,
-        "p50": 9.0123,
-        "p95": 10.5784,
-        "p99": 11.2072,
-        "p95_over_p50": 1.174
+        "p50": 8.2168,
+        "p95": 9.6177,
+        "p99": 10.1789,
+        "p95_over_p50": 1.17
       },
       {
         "calls": 16,
-        "p50": 18.007,
-        "p95": 20.2071,
-        "p99": 21.1267,
-        "p95_over_p50": 1.122
+        "p50": 16.4107,
+        "p95": 18.3677,
+        "p99": 19.1844,
+        "p95_over_p50": 1.119
       }
     ],
     "cancellation": {

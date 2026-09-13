@@ -1,4 +1,4 @@
-"""Chapter 16: the grammar must make invalid output unreachable — and only claim that much."""
+"""Chapter 18: the grammar must make invalid output unreachable — and only claim that much."""
 
 import pytest
 import torch

@@ -1,4 +1,4 @@
-"""Chapter 22: dropping a request the caller no longer wants."""
+"""Chapter 24: dropping a request the caller no longer wants."""
 
 import pytest
 import torch

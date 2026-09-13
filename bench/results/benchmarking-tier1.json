@@ -1,6 +1,6 @@
 {
   "engine": "benchmarking",
-  "generated_at": "2026-09-13T19:12:46+00:00",
+  "generated_at": "2026-09-13T20:55:16+00:00",
   "hardware": {
     "platform": "Linux-6.18.44-fc-v24-x86_64-with-glibc2.39",
     "machine": "x86_64",
@@ -28,7 +28,7 @@
     "torch": "2.14.0+cu130",
     "numpy": "2.4.6"
   },
-  "code_fingerprint": "484e2d7058b9efef",
+  "code_fingerprint": "f180d46c46b37e02",
   "code_sources": [
     "bench/closed_loop.py",
     "llmserve/engines/prefix.py",
@@ -47,38 +47,38 @@
       {
         "generator": "Open loop",
         "detail": "24 req/s offered",
-        "ttft_p50": 1.9163,
-        "ttft_p95": 3.7798,
-        "ttft_p99": 3.9825,
-        "output_tokens_per_second": 337.34,
-        "requests_per_second": 8.157
+        "ttft_p50": 3.0144,
+        "ttft_p95": 4.6677,
+        "ttft_p99": 5.0757,
+        "output_tokens_per_second": 240.91,
+        "requests_per_second": 5.825
       },
       {
         "generator": "Closed loop",
         "detail": "2 workers",
         "ttft_p50": 0.0134,
-        "ttft_p95": 0.0234,
-        "ttft_p99": 0.0239,
-        "output_tokens_per_second": 252.73,
-        "requests_per_second": 6.111
+        "ttft_p95": 0.0238,
+        "ttft_p99": 0.0393,
+        "output_tokens_per_second": 245.99,
+        "requests_per_second": 5.948
       },
       {
         "generator": "Closed loop",
         "detail": "4 workers",
-        "ttft_p50": 0.0174,
-        "ttft_p95": 0.0391,
-        "ttft_p99": 0.0426,
-        "output_tokens_per_second": 348.86,
-        "requests_per_second": 8.436
+        "ttft_p50": 0.0166,
+        "ttft_p95": 0.0381,
+        "ttft_p99": 0.0382,
+        "output_tokens_per_second": 367.24,
+        "requests_per_second": 8.88
       },
       {
         "generator": "Closed loop",
         "detail": "8 workers",
-        "ttft_p50": 0.0238,
-        "ttft_p95": 0.0872,
-        "ttft_p99": 0.0872,
-        "output_tokens_per_second": 437.38,
-        "requests_per_second": 10.576
+        "ttft_p50": 0.0237,
+        "ttft_p95": 0.076,
+        "ttft_p99": 0.076,
+        "output_tokens_per_second": 458.95,
+        "requests_per_second": 11.098
       }
     ]
   }

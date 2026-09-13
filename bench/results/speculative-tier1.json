@@ -1,6 +1,6 @@
 {
   "engine": "speculative",
-  "generated_at": "2026-09-13T19:22:22+00:00",
+  "generated_at": "2026-09-13T21:04:28+00:00",
   "hardware": {
     "platform": "Linux-6.18.44-fc-v24-x86_64-with-glibc2.39",
     "machine": "x86_64",
@@ -28,7 +28,7 @@
     "torch": "2.14.0+cu130",
     "numpy": "2.4.6"
   },
-  "code_fingerprint": "9f71c020c7b99ee6",
+  "code_fingerprint": "5a06f9fcc1f8c7fb",
   "code_sources": [
     "llmserve/speculative.py",
     "bench/train_tiny.py"
