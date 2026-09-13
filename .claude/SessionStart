@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# Bootstrap so a Claude Code web session can lint, test and build without setup.
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+python -m pip install --quiet --upgrade pip
+pip install --quiet -r requirements-dev.txt
+
+if ! command -v myst >/dev/null 2>&1; then
+  npm install -g "mystmd@$(node -p "require('./package.json').devDependencies.mystmd")" >/dev/null 2>&1 || \
+    echo "note: mystmd install failed; ./scripts/ci-check.sh will skip the book build"
+fi
+
+echo "Ready. Run ./scripts/ci-check.sh before pushing."

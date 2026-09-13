@@ -1,0 +1,109 @@
+name: Deploy book to GitHub Pages
+
+# Adapted from snowch.github.io/.github/workflows/deploy.yml, which already solves the parts
+# of this that are easy to get wrong — notably BASE_URL for a project site.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Restore MyST caches (execute + templates)
+        uses: actions/cache@v4
+        with:
+          path: |
+            _build/execute
+            _build/templates
+          # bench/results is in the key on purpose: a new benchmark result must invalidate
+          # executed output, or the book publishes stale numbers (PLAN.md §9, gotcha 4).
+          key: myst-v1-${{ runner.os }}-node20-py311-${{ hashFiles('requirements.txt', 'package.json', 'myst.yml', 'bench/results/*.json') }}
+          restore-keys: |
+            myst-v1-${{ runner.os }}-node20-py311-
+
+      - name: Setup Pages
+        id: pages
+        uses: actions/configure-pages@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install MyST CLI (pinned)
+        # Pinned via package.json so a build that worked yesterday cannot break with no commit
+        # (PLAN.md §9, gotcha 3).
+        run: npm install -g "mystmd@$(node -p "require('./package.json').devDependencies.mystmd")"
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Build the book
+        env:
+          # base_path is "/" for a user site and "/repo" for a project site; MyST wants an
+          # empty string at the root. Without this every asset and link 404s under
+          # /llm-serving-from-scratch/ (PLAN.md §9).
+          BASE_URL: ${{ steps.pages.outputs.base_path == '/' && '' || steps.pages.outputs.base_path }}
+        run: myst build --html --execute --strict
+
+      - name: Copy robots.txt
+        run: cp robots.txt _build/html/robots.txt
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: "_build/html"
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    timeout-minutes: 60
+    environment:
+      name: github-pages
+      url: ${{ steps.page.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages (attempt 1)
+        id: deploy1
+        uses: actions/deploy-pages@v4
+        continue-on-error: true
+        with:
+          timeout: 1800000
+
+      - name: Backoff before retry
+        if: ${{ steps.deploy1.outcome != 'success' }}
+        run: sleep 60
+
+      - name: Deploy to GitHub Pages (attempt 2)
+        id: deploy2
+        if: ${{ steps.deploy1.outcome != 'success' }}
+        uses: actions/deploy-pages@v4
+        with:
+          timeout: 1800000
+
+      - name: Expose page URL (from the successful attempt)
+        id: page
+        if: ${{ always() }}
+        run: echo "page_url=${{ steps.deploy2.outputs.page_url || steps.deploy1.outputs.page_url }}" >> $GITHUB_OUTPUT

@@ -1,0 +1,56 @@
+[project]
+name = "llmserve"
+version = "0.0.0"
+description = "Reference LLM inference engine built across the LLM Serving from Scratch book"
+authors = [{ name = "Chris Snow" }]
+requires-python = ">=3.11"
+license = { text = "Apache-2.0" }
+
+[tool.setuptools.packages.find]
+include = ["llmserve*", "bench*"]
+
+[tool.ruff]
+exclude = [".git", ".github", ".venv", "__pycache__", "_build", "build", "dist"]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "N",    # pep8-naming
+    "UP",   # pyupgrade
+    "B",    # flake8-bugbear
+    "C4",   # flake8-comprehensions
+    "SIM",  # flake8-simplify
+]
+ignore = [
+    "E501",   # line length is the formatter's job
+    "E402",   # module-level import not at top (educational code interleaves prose)
+    "B008",   # function call in argument defaults
+    "N803",   # argument name should be lowercase (Q, K, V are the conventional names)
+    "N806",   # variable in function should be lowercase (same reason)
+    "N812",   # lowercase imported as non-lowercase (import torch.nn.functional as F)
+    "SIM108", # ternary operator can hurt readability in teaching code
+]
+fixable = ["ALL"]
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.ruff.lint.isort]
+known-first-party = ["llmserve", "bench"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+# So `pytest` works in a fresh clone with no install step — the repo root holds llmserve/ and
+# bench/, and the CPU test tier must stay a one-command affair.
+pythonpath = ["."]

@@ -1,0 +1,6 @@
+# Lint and test tooling. Installed by the quality workflow, which deliberately does not
+# install torch — the CPU test tier must stay fast.
+# Versions verified 2026-09-13.
+ruff==0.16.7
+pytest==9.1.1
+pre-commit==4.6.2

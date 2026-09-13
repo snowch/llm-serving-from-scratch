@@ -1,0 +1,102 @@
+# See docs at: https://mystmd.org/guide/frontmatter
+version: 1
+project:
+  id: llm-serving-from-scratch
+  title: LLM Serving from Scratch
+  description: >-
+    Build a production LLM inference engine from scratch — KV cache, continuous batching, paged
+    attention, prefix caching, speculative decoding, quantisation and serving operations —
+    measuring every step.
+  keywords:
+    - llm serving
+    - llm inference
+    - vllm
+    - paged attention
+    - continuous batching
+    - speculative decoding
+    - quantisation
+    - gpu
+  authors:
+    - name: Chris Snow
+      url: https://snowch.github.io
+  github: https://github.com/snowch/llm-serving-from-scratch
+  license:
+    content: CC-BY-NC-4.0
+    code: Apache-2.0
+  bibliography:
+    - references.bib
+  exclude:
+    - README.md
+    - PLAN.md
+    - CLAUDE.md
+    - AUTHORING_GUIDE.md
+    - CHECKPOINTS.md
+  toc:
+    - file: index.md
+
+    - title: Part I — The Serving Problem
+      children:
+        - file: chapters/ch01_what_an_inference_server_does.md
+        - file: chapters/ch02_measuring_what_matters.md
+        - file: chapters/ch03_the_arithmetic_of_inference.md
+    - title: Part II — The Decode Loop
+      children:
+        - file: chapters/ch04_generating_tokens_correctly.md
+        - file: chapters/ch05_the_kv_cache.md
+        - file: chapters/ch06_static_batching_and_its_limits.md
+    - title: Part III — Building the Engine
+      children:
+        - file: chapters/ch07_continuous_batching.md
+        - file: chapters/ch08_paged_attention_and_the_block_manager.md
+        - file: chapters/ch09_prefix_caching.md
+        - file: chapters/ch10_chunked_prefill_and_scheduling_policy.md
+        - file: chapters/ch11_disaggregating_prefill_and_decode.md
+    - title: Part IV — Making the Math Cheaper
+      children:
+        - file: chapters/ch12_attention_at_speed.md
+        - file: chapters/ch13_paged_attention_kernel_in_triton.md
+        - file: chapters/ch14_quantisation_for_serving.md
+        - file: chapters/ch15_speculative_decoding.md
+        - file: chapters/ch16_constrained_and_structured_decoding.md
+    - title: Part V — Scaling Out
+      children:
+        - file: chapters/ch17_multi_gpu_parallelism.md
+        - file: chapters/ch18_multi_replica_routing_and_autoscaling.md
+        - file: chapters/ch19_multi_tenancy_and_lora.md
+    - title: Part VI — Serving Patterns by Workload
+      children:
+        - file: chapters/ch20_chat_and_assistants.md
+        - file: chapters/ch21_rag_and_long_context.md
+        - file: chapters/ch22_agents_and_tool_use.md
+        - file: chapters/ch23_code_completion_and_offline_batch.md
+    - title: Part VII — Running It in Production
+      children:
+        - file: chapters/ch24_the_api_surface.md
+        - file: chapters/ch25_observability_for_serving_engines.md
+        - file: chapters/ch26_reliability_and_operations.md
+        - file: chapters/ch27_cost_and_capacity_planning.md
+        - file: chapters/ch28_benchmarking_and_verifying.md
+    - title: Capstone
+      children:
+        - file: chapters/ch29_the_finished_engine.md
+
+    - title: Appendices
+      children:
+        - file: appendices/appendix_a_gpu_and_hardware_primer.md
+        - file: appendices/appendix_b_environment_setup.md
+        - file: appendices/appendix_c_code_map.md
+        - file: appendices/appendix_d_glossary.md
+        - file: appendices/appendix_e_reading_list.md
+
+site:
+  template: book-theme
+  title: LLM Serving from Scratch
+  options:
+    style: ./custom.css
+    logo_text: LLM Serving from Scratch
+    analytics_google: G-7E3VJX5MQJ
+  nav:
+    - title: Chris Snow
+      url: https://snowch.github.io
+    - title: GitHub
+      url: https://github.com/snowch/llm-serving-from-scratch

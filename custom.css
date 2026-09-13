@@ -1,0 +1,23 @@
+/* LLM Serving from Scratch — minimal overrides on top of the MyST book theme. */
+
+/* The chapter header table (tier / prerequisites / scorecard) appears on every chapter.
+   Keep it compact and visually distinct from body tables. */
+.chapter-header table {
+  font-size: 0.9rem;
+}
+
+/* Scorecard tables are wide and numeric; never let them break the page layout. */
+table {
+  display: block;
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+/* Tabular figures so scorecard columns line up down the page. */
+td:not(:first-child) {
+  font-variant-numeric: tabular-nums;
+}
+
+code {
+  font-size: 0.9em;
+}

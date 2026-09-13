@@ -389,8 +389,8 @@ from [§6](#6-companion-code):
 llm-serving-from-scratch/
 ├── myst.yml                  # project config: TOC, site template, bibliography
 ├── index.md                  # preface: why this book, how to read it, tiers
-├── chapters/ch01..ch29.md
-├── appendices/appendix_a..e.md
+├── chapters/ch01_*.md … ch29_*.md   # descriptive slugs, for URLs and search
+├── appendices/appendix_a_*.md … appendix_e_*.md
 ├── llmserve/                 # the engine (§6.1)
 ├── bench/                    # harness + committed results
 ├── tests/
@@ -404,8 +404,9 @@ llm-serving-from-scratch/
 ├── robots.txt
 ├── favicon.ico
 ├── pyproject.toml            # ruff config + package metadata
-├── requirements.txt          # pinned; includes mystmd + jupyter-book
-├── package.json              # pins the mystmd version
+├── requirements.txt          # pinned engine + book deps
+├── requirements-dev.txt      # ruff/pytest/pre-commit, installed by the quality workflow
+├── package.json              # pins mystmd — the single source of truth for its version
 ├── .pre-commit-config.yaml
 ├── .github/workflows/{quality.yml,deploy.yml}
 ├── .claude/SessionStart      # bootstrap deps so web sessions can run tests
@@ -616,13 +617,16 @@ Two smaller ones remain, and neither blocks authoring:
 
 ## 14. Immediate next steps
 
-1. Scaffold the repo per [§8](#8-repository-layout): `myst.yml` with all seven parts and 29
-   chapter stubs, `pyproject.toml`, pinned `requirements.txt` + `package.json`, both workflows,
-   `.claude/SessionStart`.
-2. Enable GitHub Pages on this repo with source = GitHub Actions, and confirm an **empty book
-   deploys correctly under `/llm-serving-from-scratch/`** before writing any prose — `BASE_URL`
-   is the one thing that will silently break every link if it is wrong, and it is much easier to
-   verify against an empty site.
+1. ~~Scaffold the repo per [§8](#8-repository-layout).~~ **Done.** All 29 chapter stubs and 5
+   appendices exist, carrying the [§12.1](#121-chapter-template) template with per-chapter
+   guidance; `myst.yml`, both workflows, pinned dependencies, `pyproject.toml`, licences,
+   `AUTHORING_GUIDE.md`, `CHECKPOINTS.md` and `.claude/SessionStart` are in place. Verified
+   locally: `ruff` clean, tests pass, `myst build --strict` builds all 35 pages with zero
+   content warnings.
+2. **Enable GitHub Pages** on this repo with source = **GitHub Actions** (a repository setting,
+   so it cannot be done from a commit), then confirm the stub book deploys correctly under
+   `/llm-serving-from-scratch/`. `BASE_URL` is the one thing that will silently break every link
+   if it is wrong, and it is far easier to verify now than after 29 chapters.
 3. Make the four `snowch.github.io` edits in [§10](#10-linking-from-snowchgithubio) so the link
    exists from day one, with the landing page marked *in progress*.
 4. Build `bench/harness.py`, then ch01–ch03, as v0.1. **Do not write an optimisation chapter

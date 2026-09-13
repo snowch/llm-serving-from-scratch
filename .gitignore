@@ -1,0 +1,26 @@
+# MyST build output
+_build/
+.myst/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Node
+node_modules/
+
+# Model weights are never committed (PLAN.md §5)
+*.safetensors
+*.bin
+*.gguf
+models/
+
+# Local benchmark scratch (committed results live in bench/results/*.json)
+bench/results/*.local.json
+
+.DS_Store
