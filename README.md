@@ -15,9 +15,9 @@ Every chapter re-runs the same benchmark, so progress is measured rather than as
 outline (7 parts, 29 chapters), companion-code design, toolchain, publishing pipeline, and
 delivery roadmap.
 
-Once authoring begins, the book will be published to
-**https://snowch.github.io/llm-serving-from-scratch/** and linked from
-[snowch.github.io](https://snowch.github.io).
+Built with **Jupyter Book 2 / MyST** (`mystmd`), matching the rest of
+[snowch.github.io](https://snowch.github.io). Once authoring begins, the book will be published
+to **https://snowch.github.io/llm-serving-from-scratch/** and linked from the site.
 
 ## Relationship to the LLM From Scratch series
 
