@@ -255,3 +255,55 @@ def score_matrix_table() -> str:
         size = f"{payload / 1e6:.0f} MB" if payload < 1e9 else f"{payload / 1e9:.1f} GB"
         lines.append(f"| {context:,} | {size} |")
     return "\n".join(lines)
+
+
+def quantisation_table(name: str = "quant-tier1") -> str:
+    """Chapter 14's three axes in one table: quality, memory, speed."""
+    data = load(name)
+    rows = data["summary"]["weights"]
+    baseline = rows[0]["perplexity"]
+    base_bytes = rows[0]["linear_bytes"]
+    lines = [
+        "| Scheme | Perplexity | Change | Linear weights | Decode tok/s |",
+        "|---|---|---|---|---|",
+    ]
+    for row in rows:
+        delta = 100 * (row["perplexity"] - baseline) / baseline
+        change = "baseline" if row is rows[0] else f"{delta:+.2f}%"
+        size = f"{row['linear_bytes'] / 1e6:.2f} MB"
+        if row is not rows[0]:
+            size += f" ({base_bytes / row['linear_bytes']:.1f}x smaller)"
+        lines.append(
+            f"| {row['label']} | {row['perplexity']:.4f} | {change} | {size} | "
+            f"{row['decode_tok_per_s']} |"
+        )
+    return "\n".join(lines)
+
+
+def kv_quantisation_table(name: str = "quant-tier1") -> str:
+    """What quantising the cache costs in quality, and saves in footprint."""
+    data = load(name)
+    baseline = data["conditions"]["baseline_perplexity"]
+    lines = ["| KV precision | Perplexity | Change | KV per token |", "|---|---|---|---|"]
+    lines.append(f"| fp32 (baseline) | {baseline:.4f} | baseline | 3,072 B |")
+    for row in data["summary"]["kv_cache"]:
+        delta = 100 * (row["perplexity"] - baseline) / baseline
+        lines.append(
+            f"| INT{row['bits']} | {row['perplexity']:.4f} | {delta:+.2f}% | "
+            f"{row['kv_bytes_per_token']:,.0f} B |"
+        )
+    return "\n".join(lines)
+
+
+def outlier_table(name: str = "quant-tier1") -> str:
+    """The mechanism behind per-channel scaling, on a matrix that actually has an outlier."""
+    data = load(name)["summary"]["outliers"]
+    return "\n".join(
+        [
+            "| Scale choice | Mean error on the other channels |",
+            "|---|---|",
+            f"| Per-tensor (one scale) | {data['per_tensor_error']:.5f} |",
+            f"| Per-channel | {data['per_channel_error']:.5f} |",
+            f"| **Per-tensor is worse by** | **{data['ratio']:.0f}x** |",
+        ]
+    )

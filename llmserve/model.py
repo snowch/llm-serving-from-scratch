@@ -211,7 +211,21 @@ class TinyGPT(nn.Module):
         positions: torch.Tensor | None = None,
         valid_mask: torch.Tensor | None = None,
     ) -> tuple[torch.Tensor, KVCache]:
+        """Serving path: no autograd, so nothing accumulates a graph while generating."""
+        return self._forward(input_ids, past, positions, valid_mask)
+
+    def _forward(
+        self,
+        input_ids: torch.Tensor,
+        past: KVCache | None = None,
+        positions: torch.Tensor | None = None,
+        valid_mask: torch.Tensor | None = None,
+    ) -> tuple[torch.Tensor, KVCache]:
         """Return logits for every input position, plus the updated cache.
+
+        Undecorated, so training can use it (ch14 needs a model whose output can get worse, and
+        that means one that has been trained). Serving goes through ``forward``, which adds
+        inference mode.
 
         ``positions`` lets the caller say where these tokens sit in their sequence. During decode
         that is the current length, not zero, and getting it wrong is a silent correctness bug

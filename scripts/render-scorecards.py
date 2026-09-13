@@ -25,7 +25,10 @@ from bench.scorecard import (  # noqa: E402
     chunk_cost_table,
     conditions,
     handoff_table,
+    kv_quantisation_table,
     memory_table,
+    outlier_table,
+    quantisation_table,
     score_matrix_table,
     table,
 )
@@ -44,6 +47,9 @@ DERIVED = {
     "ch11-handoff": handoff_table,
     "ch12-footprint": attention_footprint_table,
     "ch12-score-matrix": score_matrix_table,
+    "ch14-quantisation": quantisation_table,
+    "ch14-kv-quantisation": kv_quantisation_table,
+    "ch14-outliers": outlier_table,
 }
 
 

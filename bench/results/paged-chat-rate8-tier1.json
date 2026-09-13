@@ -1,6 +1,6 @@
 {
   "engine": "paged",
-  "generated_at": "2026-09-13T15:28:54+00:00",
+  "generated_at": "2026-09-13T16:21:02+00:00",
   "hardware": {
     "platform": "Linux-6.18.44-fc-v24-x86_64-with-glibc2.39",
     "machine": "x86_64",
@@ -28,7 +28,7 @@
     "torch": "2.14.0+cu130",
     "numpy": "2.4.6"
   },
-  "code_fingerprint": "40b8ac1ef6a24b0b",
+  "code_fingerprint": "131dd3c18db5d930",
   "engine_module": "llmserve/engines/paged.py",
   "conditions": {
     "rate_per_second": 8.0,
@@ -43,15 +43,15 @@
   "summary": {
     "requests": 24,
     "completed": 24,
-    "ttft_p50": 0.0721,
-    "ttft_p95": 0.2975,
-    "ttft_p99": 0.3641,
-    "itl_p50": 0.026,
-    "itl_p95": 0.0354,
-    "output_tokens_per_second": 212.87,
-    "requests_per_second": 6.331,
-    "goodput_per_second": 6.331,
+    "ttft_p50": 0.0572,
+    "ttft_p95": 0.2026,
+    "ttft_p99": 0.2857,
+    "itl_p50": 0.0256,
+    "itl_p95": 0.0327,
+    "output_tokens_per_second": 220.02,
+    "requests_per_second": 6.543,
+    "goodput_per_second": 6.543,
     "goodput_fraction": 1.0,
-    "wall_time": 3.791
+    "wall_time": 3.668
   }
 }
