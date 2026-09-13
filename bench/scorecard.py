@@ -336,3 +336,40 @@ def speculation_distribution_table(name: str = "speculative-tier1") -> str:
         f"| *Theory predicts for the bug* | *{d['predicted_if_biased']:.5f}* | *—* |",
     ]
     return "\n".join(lines)
+
+
+def constrained_validity_table(name: str = "constrained-tier1") -> str:
+    """Does constraining work? Split by whether generation was allowed to finish."""
+    v = load(name)["summary"]["validity"]
+    trials = v["trials"]
+    completed = v["constrained_completed"]
+    lines = ["| Generation | Valid JSON | Rate |", "|---|---|---|"]
+    lines.append(
+        f"| Unconstrained | {v['unconstrained_valid']}/{trials} | {v['unconstrained_valid'] / trials:.0%} |"
+    )
+    lines.append(
+        f"| Constrained, all attempts | {v['constrained_valid']}/{trials} | {v['constrained_valid'] / trials:.0%} |"
+    )
+    lines.append(
+        f"| Constrained, reached end state | {v['constrained_valid']}/{completed} | "
+        f"{v['constrained_valid'] / max(completed, 1):.0%} |"
+    )
+    return "\n".join(lines)
+
+
+def mask_cost_table(name: str = "constrained-tier1") -> str:
+    """What building a mask costs, by vocabulary size.
+
+    The second column is the cost of rebuilding it on every step of a 1,000-token generation:
+    one mask in microseconds means a thousand of them in milliseconds.
+    """
+    rows = load(name)["summary"]["mask_cost"]["per_mask"]
+    lines = [
+        "| Vocabulary | One mask | Rebuilt every step, 1,000 tokens |",
+        "|---|---|---|",
+    ]
+    for row in rows:
+        per_mask = row["microseconds_per_mask"]
+        # per_mask microseconds x 1,000 steps = per_mask milliseconds.
+        lines.append(f"| {row['vocab_size']:,} | {per_mask:.0f} µs | {per_mask:.0f} ms |")
+    return "\n".join(lines)

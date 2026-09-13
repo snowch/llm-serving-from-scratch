@@ -24,8 +24,10 @@ from bench.scorecard import (  # noqa: E402
     attention_footprint_table,
     chunk_cost_table,
     conditions,
+    constrained_validity_table,
     handoff_table,
     kv_quantisation_table,
+    mask_cost_table,
     memory_table,
     outlier_table,
     quantisation_table,
@@ -54,6 +56,8 @@ DERIVED = {
     "ch14-outliers": outlier_table,
     "ch15-acceptance": speculation_table,
     "ch15-distribution": speculation_distribution_table,
+    "ch16-validity": constrained_validity_table,
+    "ch16-mask-cost": mask_cost_table,
 }
 
 
