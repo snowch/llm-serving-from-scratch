@@ -30,6 +30,8 @@ from bench.scorecard import (  # noqa: E402
     outlier_table,
     quantisation_table,
     score_matrix_table,
+    speculation_distribution_table,
+    speculation_table,
     table,
 )
 from bench.scorecards import CONDITIONS, SCORECARDS  # noqa: E402
@@ -50,6 +52,8 @@ DERIVED = {
     "ch14-quantisation": quantisation_table,
     "ch14-kv-quantisation": kv_quantisation_table,
     "ch14-outliers": outlier_table,
+    "ch15-acceptance": speculation_table,
+    "ch15-distribution": speculation_distribution_table,
 }
 
 

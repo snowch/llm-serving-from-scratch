@@ -307,3 +307,32 @@ def outlier_table(name: str = "quant-tier1") -> str:
             f"| **Per-tensor is worse by** | **{data['ratio']:.0f}x** |",
         ]
     )
+
+
+def speculation_table(name: str = "speculative-tier1") -> str:
+    """Acceptance economics: what proposing more actually buys."""
+    rows = load(name)["summary"]["sweep"]
+    lines = [
+        "| Proposed per round (k) | Acceptance rate | Tokens per target pass | Output identical |",
+        "|---|---|---|---|",
+    ]
+    for row in rows:
+        lines.append(
+            f"| {row['k']} | {row['acceptance_rate']:.0%} | {row['tokens_per_round']:.2f} | "
+            f"{'yes' if row['identical_to_greedy'] else 'NO'} |"
+        )
+    return "\n".join(lines)
+
+
+def speculation_distribution_table(name: str = "speculative-tier1") -> str:
+    """The correctness claim, as a falsifiable measurement rather than an assertion."""
+    d = load(name)["summary"]["distribution"]
+    lines = [
+        f"| Acceptance rule | P(drafted token) over {d['samples']:,} samples | Distance from target |",
+        "|---|---|---|",
+        f"| Target model, sampled directly | {d['target_probability']:.5f} | — |",
+        f"| Residual rule (correct) | {d['measured_correct_rule']:.5f} | {d['correct_rule_sigma']} SE |",
+        f"| Resample from p_target (bug) | {d['measured_biased_rule']:.5f} | {d['biased_rule_sigma']} SE |",
+        f"| *Theory predicts for the bug* | *{d['predicted_if_biased']:.5f}* | *—* |",
+    ]
+    return "\n".join(lines)

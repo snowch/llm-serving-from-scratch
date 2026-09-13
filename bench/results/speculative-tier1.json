@@ -1,0 +1,81 @@
+{
+  "engine": "speculative",
+  "generated_at": "2026-09-13T16:44:27+00:00",
+  "hardware": {
+    "platform": "Linux-6.18.44-fc-v24-x86_64-with-glibc2.39",
+    "machine": "x86_64",
+    "processor": "x86_64",
+    "cpu_count": 4,
+    "device": "cpu"
+  },
+  "model": {
+    "name": "TinyGPT (reference, random weights)",
+    "params": 5838080,
+    "vocab_size": 260,
+    "n_layers": 6,
+    "n_heads": 8,
+    "n_kv_heads": 2,
+    "head_dim": 32,
+    "ffn_mult": 4,
+    "max_seq_len": 2048,
+    "rope_theta": 10000.0,
+    "norm_eps": 1e-05,
+    "dtype": "fp32",
+    "seed": 0
+  },
+  "versions": {
+    "python": "3.11.15",
+    "torch": "2.14.0+cu130",
+    "numpy": "2.4.6"
+  },
+  "code_fingerprint": "n/a-speculative",
+  "engine_module": null,
+  "conditions": {
+    "trace": "acceptance on the trained model; distribution test on the untrained one",
+    "drafter": "ngram(3)",
+    "held_out_perplexity": 1.8321
+  },
+  "summary": {
+    "sweep": [
+      {
+        "k": 1,
+        "acceptance_rate": 0.8889,
+        "tokens_per_round": 1.889,
+        "target_passes": 9,
+        "identical_to_greedy": true
+      },
+      {
+        "k": 2,
+        "acceptance_rate": 0.8333,
+        "tokens_per_round": 2.667,
+        "target_passes": 6,
+        "identical_to_greedy": true
+      },
+      {
+        "k": 4,
+        "acceptance_rate": 0.8125,
+        "tokens_per_round": 4.25,
+        "target_passes": 4,
+        "identical_to_greedy": true
+      },
+      {
+        "k": 8,
+        "acceptance_rate": 0.875,
+        "tokens_per_round": 8.0,
+        "target_passes": 2,
+        "identical_to_greedy": true
+      }
+    ],
+    "distribution": {
+      "drafted_token": 101,
+      "target_probability": 0.00479,
+      "predicted_if_biased": 0.00956,
+      "measured_correct_rule": 0.00517,
+      "measured_biased_rule": 0.01083,
+      "standard_error": 0.00089,
+      "correct_rule_sigma": 0.42,
+      "biased_rule_sigma": 6.78,
+      "samples": 6000
+    }
+  }
+}
