@@ -47,6 +47,11 @@ These are what the book's credibility rests on. Do not work around them.
 - **A runner whose defaults do not produce what the book cites.** `verify-numbers.py` stamps *every*
   file in `bench/results/`, not just the cited ones, because a default that drifted once left the
   cited files behind on every regeneration and nothing noticed.
+- **A test that reads `_build/`.** A local checkout has a `_build/` left over from earlier work and
+  a CI runner never does, so such a test passes locally and fails in CI — `ci-check.sh` runs pytest
+  before it runs `myst build`, so the directory is not there even in a full local check. Tests take
+  their input from the repository, not from build output. The end-to-end check on the PDF is the
+  deploy workflow's own `build-pdf.py` step, which fails the deploy if a page is missing.
 - **Bare `pytest`.** Use `python3 -m pytest`, so tests run under the interpreter that has the
   project's dependencies; a standalone pytest has its own isolated environment.
 - **`BASE_URL`.** This is a *project* site at `/llm-serving-from-scratch/`. The deploy workflow

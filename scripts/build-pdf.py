@@ -570,6 +570,20 @@ def reparse() -> bool:
     return True
 
 
+def shown(path: Path) -> Path:
+    """A path for the progress lines: repo-relative inside the repo, absolute outside it.
+
+    ``--out`` takes any path, but only the default is under ``ROOT``, so ``relative_to(ROOT)``
+    raised for everything else — including the relative path the deploy workflow passes. It raised
+    at the line that *reports* success, after the file had been written, so the build failed having
+    done all of its work.
+    """
+    try:
+        return path.relative_to(ROOT)
+    except ValueError:
+        return path
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--out", type=Path, default=OUT_DIR / f"{STEM}.pdf")
@@ -578,6 +592,9 @@ def main() -> int:
         "--no-myst", action="store_true", help="reuse the existing _build/site content"
     )
     args = parser.parse_args()
+    # Resolved before anything uses it: the default is absolute, so a relative --out took a
+    # different path through the code than the default ever did.
+    args.out = args.out.resolve()
 
     if not args.no_myst and not reparse():
         return 1
@@ -601,7 +618,7 @@ def main() -> int:
     html_path = args.out.with_suffix(".html")
     html_path.write_text(document)
     chapters = sum(len(part.pages) for part in parts)
-    print(f"  wrote {html_path.relative_to(ROOT)} ({chapters} chapters in {len(parts)} parts)")
+    print(f"  wrote {shown(html_path)} ({chapters} chapters in {len(parts)} parts)")
 
     if args.html_only:
         print("  --html-only: open it in a browser and print to PDF.")
@@ -617,7 +634,7 @@ def main() -> int:
         return 1
 
     size_mb = args.out.stat().st_size / 1e6
-    print(f"  wrote {args.out.relative_to(ROOT)} ({page_count(args.out)} pages, {size_mb:.1f} MB)")
+    print(f"  wrote {shown(args.out)} ({page_count(args.out)} pages, {size_mb:.1f} MB)")
     return 0
 
 

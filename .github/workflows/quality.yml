@@ -44,3 +44,14 @@ jobs:
         # ci-check.sh is the single source of truth for what CI runs, so local and CI can never
         # drift (PLAN.md §9, gotcha 2).
         run: ./scripts/ci-check.sh
+
+      - name: Assemble the PDF's HTML
+        # The mdast renderer is the one part of the book's pipeline that is not MyST's, and it was
+        # previously only ever run by the deploy workflow — on main, after review. A defect in it
+        # therefore reached main unverified, and one did: every explicit --out crashed the run at
+        # the line reporting success, including the relative path deploy.yml itself passes.
+        #
+        # This runs the renderer over every real page on every push. Deliberately no Chromium: the
+        # install is a minute and the print step is the least of it — assembling the HTML is what
+        # touches every page in the book and every node type in them.
+        run: python3 scripts/build-pdf.py --no-myst --html-only --out _build/pdf-check/book.pdf

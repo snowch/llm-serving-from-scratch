@@ -6,10 +6,12 @@ nothing would say so — so the contract these tests pin down is that it fails l
 """
 
 import importlib.util
+import re
 import sys
 from pathlib import Path
 
 import pytest
+import yaml
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -166,20 +168,73 @@ def test_text_is_escaped_so_prose_cannot_inject_markup():
 # -- structure ----------------------------------------------------------------------------
 
 
+def toc_entries():
+    """myst.yml's table of contents: the order the website publishes in, and so the PDF's order."""
+    return yaml.safe_load((ROOT / "myst.yml").read_text())["project"]["toc"]
+
+
+def parsed_pages(skip=()):
+    """A stand-in for ``load_pages()``, covering every file myst.yml lists.
+
+    The real ``load_pages`` reads a completed MyST build off disk, which these tests have no
+    business requiring: a test that passes only when you happen to have built the site already is
+    worse than no test, because it goes green locally and red in CI — which is exactly what this
+    one did. What is worth pinning is the ordering logic, and that takes its pages as an argument.
+    The end-to-end version of the check is the deploy workflow building the real PDF, where a page
+    missing from the parse fails the deploy.
+
+    ``slug`` here is the filename stem, which is *not* a claim about MyST's slugging rules — the
+    assertions below are on ``source``, the one identifier myst.yml and MyST agree on.
+    """
+    pages = {}
+    for entry in toc_entries():
+        listed = (
+            [entry["file"]]
+            if "file" in entry
+            else [child["file"] for child in entry.get("children") or [] if "file" in child]
+        )
+        for source in listed:
+            source = source.lstrip("./")
+            if source in skip:
+                continue
+            pages[source] = build_pdf.Page(
+                slug=Path(source).stem,
+                source=source,
+                mdast={"type": "root", "children": []},
+            )
+    return pages
+
+
 def test_the_chapter_order_comes_from_the_table_of_contents():
     """The PDF must not invent an order of its own, or it stops matching the website."""
-    pages = build_pdf.load_pages()
-    front, parts = build_pdf.load_structure(pages)
-    assert front is not None and front.slug == "index"
+    front, parts = build_pdf.load_structure(parsed_pages())
+    assert front is not None and front.source == "index.md"
     assert [part.title for part in parts][0].startswith("Part I")
     # Counted from the table of contents rather than hardcoded: this assertion exists to catch a
-    # page the PDF *dropped*, and a literal would only catch the day somebody adds a chapter.
-    import yaml
-
-    toc = yaml.safe_load((ROOT / "myst.yml").read_text())["project"]["toc"]
-    listed = sum(len(entry.get("children") or []) for entry in toc if "title" in entry)
+    # page the traversal *dropped*, and a literal would only catch the day somebody adds a chapter.
+    listed = sum(len(entry.get("children") or []) for entry in toc_entries() if "title" in entry)
     assert sum(len(part.pages) for part in parts) == listed
-    assert parts[0].pages[0].slug.startswith("ch01")
+    assert parts[0].pages[0].source.startswith("chapters/ch01")
+
+
+def test_a_page_in_the_toc_that_was_not_parsed_is_an_error():
+    """The assertion that actually catches a dropped chapter.
+
+    A PDF quietly missing a chapter is indistinguishable from a complete one, so the only defence
+    is refusing to write it at all.
+    """
+    dropped = next(source for source in parsed_pages() if source.startswith("chapters/"))
+    with pytest.raises(SystemExit, match=re.escape(dropped)):
+        build_pdf.load_structure(parsed_pages(skip={dropped}))
+
+
+def test_the_progress_line_survives_an_output_path_outside_the_repository():
+    """``--out`` accepts any path, and the run used to die at the line that reports success."""
+    assert build_pdf.shown(ROOT / "_build" / "book.pdf") == Path("_build/book.pdf")
+    # The two cases that used to raise: a path outside the repository, and a relative one — which
+    # is what the deploy workflow passes, so this was a broken deploy waiting to happen.
+    for path in (Path("/tmp/somewhere-else/book.pdf"), Path("_build/html/book.pdf")):
+        assert build_pdf.shown(path) == path
 
 
 def test_titles_are_plain_text_for_the_contents_list():
