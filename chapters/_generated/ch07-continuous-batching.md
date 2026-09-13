@@ -2,11 +2,11 @@
 
 | Configuration | TTFT p50 | TTFT p95 | ITL p50 | Output tok/s | Goodput req/s |
 |---|---|---|---|---|---|
-| ch06 Static batch, 4 req/s | 0.0995s | 0.2904s | 0.0074s | 132.9 | 3.953 |
-| ch07 Continuous, 4 req/s | 0.021s | 0.0384s | 0.008s | 137.9 | 4.103 |
-| ch06 Static batch, 8 req/s | 0.1666s | 0.3447s | 0.0076s | 241.9 | 7.195 |
-| ch07 Continuous, 8 req/s | 0.0202s | 0.0303s | 0.0088s | 262.4 | 7.804 |
-| ch06 Static batch, 16 req/s | 0.2881s | 0.4913s | 0.0099s | 364.5 | 10.84 |
-| ch07 Continuous, 16 req/s | 0.0243s | 0.1357s | 0.0128s | 426.5 | 12.68 |
+| ch06 Static batch, 4 req/s | 0.0742s | 0.2381s | 0.0058s | 135.4 | 4.027 |
+| ch07 Continuous, 4 req/s | 0.0171s | 0.0197s | 0.0065s | 138.5 | 4.118 |
+| ch06 Static batch, 8 req/s | 0.1083s | 0.2889s | 0.0063s | 250.1 | 7.436 |
+| ch07 Continuous, 8 req/s | 0.0179s | 0.0227s | 0.0071s | 266.5 | 7.927 |
+| ch06 Static batch, 16 req/s | 0.2758s | 0.4816s | 0.0104s | 369.2 | 10.98 |
+| ch07 Continuous, 16 req/s | 0.0219s | 0.0258s | 0.0116s | 457.3 | 13.6 |
 
-*Conditions: TinyGPT (reference, random weights) (5,838,080 params), 4x x86_64 CPU, torch 2.14.0+cu130, poisson, prompt 32-96, output 16-48, seed 7, arrival rate 8.0/s, measured 2026-09-13T15:17:51+00:00.*
+*Conditions: TinyGPT (reference, random weights) (5,838,080 params), 4x x86_64 CPU, torch 2.14.0+cu130, poisson, prompt 32-96, output 16-48, seed 7, arrival rate 8.0/s, measured 2026-09-13T15:28:11+00:00.*

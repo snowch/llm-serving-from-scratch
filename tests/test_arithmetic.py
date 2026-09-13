@@ -6,6 +6,7 @@ then the properties that must hold whatever the numbers are.
 
 import pytest
 
+from bench.harness import ROOT
 from llmserve.arithmetic import (
     cached_decode_flops,
     decode_ceiling_tokens_per_second,
@@ -85,3 +86,35 @@ def test_batch_size_must_be_positive():
 def test_head_counts_must_be_divisible():
     with pytest.raises(ValueError, match="divisible"):
         ModelConfig(n_heads=8, n_kv_heads=3)
+
+
+def test_code_fingerprint_is_independent_of_where_the_repo_lives():
+    """Regression: fingerprints were stored against absolute paths.
+
+    A result generated in one checkout then failed verification in every other, because the
+    recorded path did not exist there. CI failed while the same command passed locally, which is
+    the most expensive shape of bug to chase.
+    """
+    import os
+
+    from bench.harness import code_fingerprint, relative_to_root
+
+    here = code_fingerprint("llmserve/engines/naive.py")
+    cwd = os.getcwd()
+    try:
+        os.chdir("/tmp")
+        assert code_fingerprint("llmserve/engines/naive.py") == here
+    finally:
+        os.chdir(cwd)
+
+    assert relative_to_root("/somewhere/else/entirely/naive.py") is None
+    assert not str(relative_to_root(str(ROOT / "llmserve" / "model.py"))).startswith("/")
+
+
+def test_fingerprint_changes_when_a_core_source_changes(tmp_path):
+    """The guard only works if it actually notices a change."""
+    from bench.harness import CORE_SOURCES, code_fingerprint
+
+    assert "llmserve/sampling.py" in CORE_SOURCES
+    baseline = code_fingerprint()
+    assert code_fingerprint("llmserve/engines/naive.py") != baseline

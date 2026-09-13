@@ -49,14 +49,37 @@ CORE_SOURCES = (
 )
 
 
+def relative_to_root(path: str | None) -> str | None:
+    """Express a source path relative to the repository root.
+
+    Absolute paths are machine-specific: a result generated in one checkout would not match the
+    same code checked out anywhere else, so every fingerprint would differ on CI while passing
+    locally. Store the relative path and resolve it against ROOT when reading.
+    """
+    if not path:
+        return None
+    try:
+        return str(Path(path).resolve().relative_to(ROOT))
+    except ValueError:
+        return None
+
+
 def code_fingerprint(engine_module: str | None = None) -> str:
-    """Hash the sources a benchmark result depends on."""
+    """Hash the sources a benchmark result depends on.
+
+    ``engine_module`` is a repo-relative path. A missing file raises rather than hashing nothing,
+    because silently contributing empty bytes makes a broken fingerprint look like a mismatch and
+    sends you hunting for the wrong problem.
+    """
     digest = hashlib.sha256()
-    paths = [ROOT / name for name in CORE_SOURCES]
+    names = [*CORE_SOURCES]
     if engine_module:
-        paths.append(Path(engine_module))
-    for path in paths:
-        digest.update(path.read_bytes() if path.exists() else b"")
+        names.append(engine_module)
+    for name in names:
+        path = ROOT / name
+        if not path.exists():
+            raise FileNotFoundError(f"cannot fingerprint missing source: {name}")
+        digest.update(path.read_bytes())
     return digest.hexdigest()[:16]
 
 
@@ -294,7 +317,7 @@ def run_benchmark(
     wall = time.perf_counter() - start
     return BenchResult(
         engine=getattr(engine, "name", type(engine).__name__),
-        engine_module=inspect.getsourcefile(type(engine)),
+        engine_module=relative_to_root(inspect.getsourcefile(type(engine))),
         records=list(records.values()),
         wall_time=wall,
         rate_per_second=rate_per_second,
