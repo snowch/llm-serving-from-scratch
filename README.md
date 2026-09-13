@@ -47,9 +47,15 @@ so the whole Tier 1 path runs on any laptop with no network access. Run
 npm install -g "mystmd@$(node -p "require('./package.json').devDependencies.mystmd")"
 pip install -r requirements.txt -r requirements-dev.txt
 
-myst start              # live preview
-./scripts/ci-check.sh   # exactly what CI runs
+myst start                     # live preview
+./scripts/ci-check.sh          # exactly what CI runs
+python3 scripts/build-pdf.py   # the whole book as one PDF
 ```
+
+The PDF is assembled from MyST's own parse output, so it cannot disagree with the site about what
+a chapter says. It needs Chromium to render — `pip install playwright && playwright install
+chromium`, or any system Chrome; `--html-only` writes just the HTML if you would rather print it
+yourself.
 
 Built with **Jupyter Book 2 / MyST** (`mystmd`), matching the rest of
 [snowch.github.io](https://snowch.github.io). Published to

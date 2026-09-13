@@ -18,3 +18,8 @@ torch==2.14.0
 
 # --- benchmarking and figures ---
 numpy==2.4.6
+
+# --- the single-file PDF build (scripts/build-pdf.py) ---
+# Reads myst.yml for the chapter order. The PDF itself is rendered by Chromium, which is not a
+# Python package: `pip install playwright && playwright install chromium`, or any system Chrome.
+PyYAML==6.0.1
