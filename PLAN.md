@@ -608,6 +608,11 @@ Two smaller ones remain, and neither blocks authoring:
   once the chapter format has settled.
 - **PDF.** `myst build --pdf` needs a LaTeX toolchain in CI (the site's workflow already
   installs `texlive-latex-*`). Defer until v1.0 and decide then whether the fidelity is worth it.
+- **Audio chapter intros.** Considered and **deferred**. Google's licensing very likely permits
+  publishing NotebookLM Audio Overviews, but Google itself labels them as possibly inaccurate and
+  "not a citable record" — which sits badly against a book whose whole claim is that every number
+  is measured. Revisit only with narration over reviewed prose. NotebookLM is still useful here as
+  a *drafting* tool: where its hosts garble a chapter is where readers will too.
 
 ## 14. Immediate next steps
 
