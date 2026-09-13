@@ -150,3 +150,24 @@ def test_continuous_batching_wastes_no_slots(model, mixed_specs):
     while engine.has_work():
         engine.step()
     assert engine.wasted_slot_steps == 0
+
+
+def test_disaggregation_does_not_change_output(model, mixed_specs):
+    """ch11: moving the cache between pools must not change a single token."""
+    from llmserve.engines.disaggregated import DisaggregatedEngine
+
+    engine = DisaggregatedEngine(model)
+    outputs: dict[int, list[int]] = {}
+    for prompt, n in mixed_specs:
+        request = Request(prompt_token_ids=list(prompt), params=SamplingParams(max_tokens=n))
+        outputs[request.request_id] = []
+        engine.add_request(request)
+    guard = 0
+    while engine.has_work() and guard < 10_000:
+        for out in engine.step():
+            outputs[out.request_id].extend(out.token_ids)
+        guard += 1
+
+    assert list(outputs.values()) == _serve_individually(model, mixed_specs)
+    assert engine.transfers == len(mixed_specs), "every request must be handed off exactly once"
+    assert engine.transferred_bytes > 0

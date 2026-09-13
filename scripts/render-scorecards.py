@@ -23,6 +23,7 @@ from bench.scorecard import (  # noqa: E402
     arithmetic_table,
     chunk_cost_table,
     conditions,
+    handoff_table,
     memory_table,
     table,
 )
@@ -38,6 +39,7 @@ DERIVED = {
     "ch03-arithmetic": lambda: arithmetic_table("cached-rate1-tier1", "naive-rate1-tier1"),
     "ch08-memory": memory_table,
     "ch10-chunk-cost": chunk_cost_table,
+    "ch11-handoff": handoff_table,
 }
 
 

@@ -54,6 +54,7 @@ match `.pre-commit-config.yaml`.
 
 ## Chapter status
 
-Chapters 1-3 are written, with measured figures. The remaining 26 chapters and all 5 appendices
-are stubs carrying the template and per-chapter guidance; `[DRAFT]` in a title means outline only. See PLAN.md §11 for what ships in which release, and
+Chapters 1-11 (Parts I-III) are written, with measured figures. The remaining 18 chapters and all
+5 appendices are stubs carrying the template and per-chapter guidance; `[DRAFT]` in a title means
+outline only. See PLAN.md §11 for what ships in which release, and
 CHECKPOINTS.md for the tag scheme.

@@ -174,3 +174,33 @@ def chunk_cost_table(name: str = "chunk-cost-tier1") -> str:
     for row in rows:
         lines.append(f"| {row['passes']} | {row['chunk']} | {row['ms']} ms |")
     return "\n".join(lines)
+
+
+def handoff_table() -> str:
+    """What a prefill-to-decode KV handoff costs at different model and context sizes.
+
+    Pure arithmetic from the chapter 3 formula, deliberately not measured: our in-process copy
+    says nothing useful about a network transfer, and this is the number that actually decides
+    whether disaggregation is viable.
+    """
+    from llmserve.arithmetic import kv_bytes_per_token
+    from llmserve.config import REFERENCE_MODEL, ModelConfig
+
+    llama8b = ModelConfig(
+        vocab_size=128_256, n_layers=32, n_heads=32, n_kv_heads=8, head_dim=128, dtype="fp16"
+    )
+    cases = [
+        ("This book's model, 256 tokens", REFERENCE_MODEL, 256),
+        ("8B GQA, 2k context", llama8b, 2048),
+        ("8B GQA, 32k context", llama8b, 32768),
+    ]
+    links = [("10 GbE", 1.25e9), ("100 GbE", 12.5e9), ("NVLink (~400 GB/s)", 4.0e11)]
+
+    header = "| Handoff | KV size | " + " | ".join(name for name, _ in links) + " |"
+    lines = [header, "|---" * (len(links) + 2) + "|"]
+    for label, model, context in cases:
+        payload = kv_bytes_per_token(model) * context
+        times = [f"{1000 * payload / bw:.1f} ms" for _, bw in links]
+        size = f"{payload / 1e6:.1f} MB" if payload < 1e9 else f"{payload / 1e9:.2f} GB"
+        lines.append(f"| {label} | {size} | " + " | ".join(times) + " |")
+    return "\n".join(lines)
