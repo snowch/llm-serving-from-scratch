@@ -69,6 +69,40 @@ zero hit rate. Requests that arrive together all prefill before any of them fini
 of them recomputed the same shared prompt and only a *later* request could ever benefit. In a real
 assistant, concurrent arrivals sharing a system prompt are the entire workload.
 
+### The cache must lose to the scheduler
+
+There is a third rule, and unlike the first two it is not about correctness — it is about the
+engine continuing to function at all.
+
+A cached block is held with a reference, so it is not free. To {ref}`ch08`'s admission loop, which
+counts free blocks, a warm cache is **indistinguishable from a full pool**. We got this wrong too,
+and the failure is total rather than gradual: the scheduler refuses to admit anything; every running
+sequence finishes and publishes *more* blocks into the cache; and the engine then spins forever with
+a full queue and an empty batch. Not a slowdown — a stall, with work available, and with the memory
+to do it held by a cache whose entire purpose was to make that work cheaper.
+
+So admission is allowed to take the cache apart:
+
+```{literalinclude} ../llmserve/engines/prefix.py
+:language: python
+:start-at:     def _make_room
+:end-before:         while self.cache.allocator.n_free < n:
+```
+
+Note what it deliberately does not do. It evicts cached prefixes and stops; it never preempts a
+running sequence to admit a queued one. Preemption to admit is not scheduling, it is thrash, and it
+belongs in the path where a sequence that was already promised memory needs it.
+
+The general form of this is worth carrying out of the chapter: **a cache that can refuse to yield is
+not a cache, it is a leak.** Anything holding memory speculatively has to lose to something that
+needs it now, and the test that this actually happens is not optional:
+
+```{literalinclude} ../tests/test_prefix.py
+:language: python
+:start-at: def test_the_cache_gives_up_blocks_so_the_scheduler_can_admit
+:end-before:     class WithoutMakeRoom
+```
+
 ## The build
 
 Lookup, share, and prefill only the remainder:
@@ -130,8 +164,8 @@ bookkeeping.
 Small, but not zero:
 
 - **Cache memory competes with running sequences.** Blocks held for reuse are blocks unavailable
-  to admit somebody. The eviction order above is what keeps that from hurting, and it is a policy
-  that can be got wrong.
+  to admit somebody. The eviction order above is what keeps that from hurting, it is a policy that
+  can be got wrong, and when it is got wrong the engine stalls rather than slows.
 - **Hashing every prompt costs something.** Trivial next to prefill, not free.
 - **Correctness now depends on a hash.** A collision means a request attends to another's context.
   Cumulative keying makes this vanishingly unlikely; a production engine verifies the tokens
@@ -151,6 +185,8 @@ Small, but not zero:
 - Publish a block when it fills, not when its author finishes — otherwise concurrent requests
   sharing a prompt all miss, which is the exact case that matters.
 - Evict cached prefixes before preempting running sequences: the cached prefix is the cheaper loss.
+- **A cache that can refuse to yield is not a cache, it is a leak.** Admission must be able to take
+  the cache apart, or a warm cache stalls the engine outright.
 - On shared-prefix traffic this is the best return in the book, and the only optimisation so far
   with no trade attached.
 

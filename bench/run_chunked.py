@@ -29,6 +29,8 @@ def _measure_chunk_cost(model, model_meta) -> None:
     import json
     import time
 
+    from bench.harness import stamped_payload
+
     prompt_len = 1536
     rows = []
     for n_passes in (1, 6, 24):
@@ -49,17 +51,15 @@ def _measure_chunk_cost(model, model_meta) -> None:
         )
 
     path = RESULTS_DIR / "chunk-cost-tier1.json"
-    payload = {
-        "engine": "microbenchmark",
-        "generated_at": __import__("datetime")
-        .datetime.now(__import__("datetime").UTC)
-        .isoformat(timespec="seconds"),
-        "hardware": __import__("bench.harness", fromlist=["_hardware"])._hardware(),
-        "model": model_meta,
-        "versions": __import__("bench.harness", fromlist=["_versions"])._versions(),
-        "conditions": {"prompt_len": prompt_len, "trace": "single prefill, no serving"},
-        "summary": {"passes": rows},
-    }
+    # No engine involved: this times the model directly, so the core sources are the whole
+    # dependency. It still gets a real fingerprint, because a change to the model would change
+    # the answer.
+    payload = stamped_payload(
+        engine="microbenchmark",
+        model=model_meta,
+        conditions={"prompt_len": prompt_len, "trace": "single prefill, no serving"},
+        summary={"passes": rows},
+    )
     path.write_text(json.dumps(payload, indent=2) + "\n")
     for row in rows:
         print(

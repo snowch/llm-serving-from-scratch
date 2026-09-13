@@ -23,6 +23,7 @@ import json
 import platform
 import subprocess
 import time
+from collections.abc import Sequence
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -64,23 +65,85 @@ def relative_to_root(path: str | None) -> str | None:
         return None
 
 
-def code_fingerprint(engine_module: str | None = None) -> str:
+def code_fingerprint(sources: str | Sequence[str] | None = None) -> str:
     """Hash the sources a benchmark result depends on.
 
-    ``engine_module`` is a repo-relative path. A missing file raises rather than hashing nothing,
-    because silently contributing empty bytes makes a broken fingerprint look like a mismatch and
-    sends you hunting for the wrong problem.
+    ``sources`` are repo-relative paths hashed on top of :data:`CORE_SOURCES` — the module that
+    generated the result, and anything it composes. One path may be passed as a bare string. A
+    missing file raises rather than hashing nothing, because silently contributing empty bytes
+    makes a broken fingerprint look like a mismatch and sends you hunting for the wrong problem.
     """
+    if isinstance(sources, str):
+        sources = [sources]
     digest = hashlib.sha256()
-    names = [*CORE_SOURCES]
-    if engine_module:
-        names.append(engine_module)
+    names = [*CORE_SOURCES, *(sources or ())]
     for name in names:
         path = ROOT / name
         if not path.exists():
             raise FileNotFoundError(f"cannot fingerprint missing source: {name}")
         digest.update(path.read_bytes())
     return digest.hexdigest()[:16]
+
+
+def engine_sources(engine: object) -> tuple[str, ...]:
+    """Repo-relative modules whose contents determine what this engine measures.
+
+    Three things count, and each was a hole when it was missing:
+
+    * the engine's own module;
+    * every module its class inherits from, because most engines in this book are a subclass that
+      overrides one method and leaves the scheduling loop to its base — a change there changes the
+      numbers and named only the subclass's file;
+    * the engines it runs, if it runs any. A router's numbers come from its replicas, so a change
+      to the replica engine has to invalidate the fleet results too. An engine that wraps others
+      says so by exposing them as ``inner_engines``.
+
+    The result is sorted, so the fingerprint does not depend on the order things were discovered.
+    """
+    found: set[str] = set()
+    pending = [engine]
+    while pending:
+        current = pending.pop()
+        for base in type(current).__mro__:
+            # ``object`` and anything else defined in C has no source file to hash.
+            try:
+                source = inspect.getsourcefile(base)
+            except TypeError:
+                continue
+            path = relative_to_root(source)
+            if path:
+                found.add(path)
+        pending += list(getattr(current, "inner_engines", ()))
+    return tuple(sorted(found))
+
+
+def stamped_payload(
+    *,
+    engine: str,
+    model: dict,
+    conditions: dict,
+    summary: dict,
+    code_sources: Sequence[str] = (),
+) -> dict:
+    """Build a stamped result payload for something that does not serve a trace.
+
+    Arithmetic tables and microbenchmarks never build a :class:`BenchResult`, and for a while they
+    wrote a placeholder fingerprint instead — which meant ``verify-numbers.py`` could not tell
+    whether the code behind those figures had changed since they were measured. Every writer of a
+    result file now goes through either this or :meth:`BenchResult.to_json`, so the stamp cannot
+    be left off.
+    """
+    return {
+        "engine": engine,
+        "generated_at": datetime.now(UTC).isoformat(timespec="seconds"),
+        "hardware": _hardware(),
+        "model": model,
+        "versions": _versions(),
+        "code_fingerprint": code_fingerprint(code_sources),
+        "code_sources": list(code_sources),
+        "conditions": conditions,
+        "summary": summary,
+    }
 
 
 @dataclass(frozen=True)
@@ -96,6 +159,8 @@ class RequestSpec:
     prompt_len: int
     max_tokens: int
     tokens: tuple[int, ...] | None = None
+    #: which tenant submitted it (ch19); None for the single-tenant traces
+    tenant: str | None = None
 
 
 @dataclass(frozen=True)
@@ -116,6 +181,7 @@ class RequestRecord:
     first_token: float | None = None
     finish: float | None = None
     n_output: int = 0
+    tenant: str | None = None
 
     @property
     def ttft(self) -> float | None:
@@ -168,7 +234,7 @@ class BenchResult:
     rate_per_second: float
     slo: SLO
     meta: dict = field(default_factory=dict)
-    engine_module: str | None = None
+    code_sources: tuple[str, ...] = ()
 
     def summary(self) -> dict:
         ttfts = np.array([r.ttft for r in self.records if r.ttft is not None])
@@ -187,7 +253,7 @@ class BenchResult:
         def pct(a: np.ndarray, q: float) -> float | None:
             return None if a.size == 0 else round(float(np.percentile(a, q)), 4)
 
-        return {
+        summary = {
             "requests": len(self.records),
             "completed": len(completed),
             "ttft_p50": pct(ttfts, 50),
@@ -200,6 +266,40 @@ class BenchResult:
             "goodput_per_second": round(len(met_slo) / self.wall_time, 3),
             "goodput_fraction": round(len(met_slo) / max(len(completed), 1), 3),
             "wall_time": round(self.wall_time, 3),
+        }
+
+        # A fleet-wide percentile hides exactly the thing chapter 19 is about: one tenant can be
+        # served perfectly while another is starved, and the aggregate looks fine either way. The
+        # key only appears when the trace actually has tenants, so single-tenant results are
+        # unchanged.
+        tenants = sorted({r.tenant for r in self.records if r.tenant})
+        if tenants:
+            summary["by_tenant"] = {t: self._tenant_summary(t) for t in tenants}
+        return summary
+
+    def _tenant_summary(self, tenant: str) -> dict:
+        """The same measures as :meth:`summary`, over one tenant's requests only."""
+        mine = [r for r in self.records if r.tenant == tenant]
+        ttfts = np.array([r.ttft for r in mine if r.ttft is not None])
+        completed = [r for r in mine if r.finish is not None]
+        met_slo = [
+            r
+            for r in completed
+            if r.ttft is not None
+            and r.ttft <= self.slo.ttft_seconds
+            and (r.itl is None or r.itl <= self.slo.itl_seconds)
+        ]
+
+        def pct(a: np.ndarray, q: float) -> float | None:
+            return None if a.size == 0 else round(float(np.percentile(a, q)), 4)
+
+        return {
+            "requests": len(mine),
+            "completed": len(completed),
+            "ttft_p50": pct(ttfts, 50),
+            "ttft_p95": pct(ttfts, 95),
+            "output_tokens": sum(r.n_output for r in completed),
+            "goodput_fraction": round(len(met_slo) / max(len(completed), 1), 3),
         }
 
     def to_json(self, path: Path | str) -> Path:
@@ -217,8 +317,8 @@ class BenchResult:
             "hardware": _hardware(),
             "model": self.meta.get("model", {}),
             "versions": _versions(),
-            "code_fingerprint": code_fingerprint(self.engine_module),
-            "engine_module": self.engine_module,
+            "code_fingerprint": code_fingerprint(self.code_sources),
+            "code_sources": list(self.code_sources),
             "conditions": {
                 "rate_per_second": self.rate_per_second,
                 "slo": asdict(self.slo),
@@ -293,10 +393,14 @@ def run_benchmark(
             request = Request(
                 prompt_token_ids=prompt,
                 params=SamplingParams(max_tokens=spec.max_tokens, seed=seed),
+                tenant=spec.tenant,
             )
             engine.add_request(request)
             records[request.request_id] = RequestRecord(
-                request_id=request.request_id, arrival=now, prompt_len=spec.prompt_len
+                request_id=request.request_id,
+                arrival=now,
+                prompt_len=spec.prompt_len,
+                tenant=spec.tenant,
             )
             index += 1
 
@@ -317,7 +421,7 @@ def run_benchmark(
     wall = time.perf_counter() - start
     return BenchResult(
         engine=getattr(engine, "name", type(engine).__name__),
-        engine_module=relative_to_root(inspect.getsourcefile(type(engine))),
+        code_sources=engine_sources(engine),
         records=list(records.values()),
         wall_time=wall,
         rate_per_second=rate_per_second,

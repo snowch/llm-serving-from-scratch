@@ -25,6 +25,10 @@ class Request:
     prompt_token_ids: list[int]
     params: SamplingParams = field(default_factory=SamplingParams)
     request_id: int = field(default_factory=lambda: next(_ids))
+    #: who submitted it (ch19). A single-tenant deployment leaves this None and never notices;
+    #: a shared one cannot schedule fairly without it, because fairness is a property *between*
+    #: callers and the engine has no other way to tell two callers apart.
+    tenant: str | None = None
 
     @property
     def prompt_len(self) -> int:

@@ -69,6 +69,10 @@ class BlockAllocator:
             self._refcount[block] = 1
         return taken
 
+    def refcount(self, block: int) -> int:
+        """How many holders a block has. Zero means it is in the free pool."""
+        return self._refcount.get(block, 0)
+
     def share(self, block: int) -> int:
         """Add a reference to an existing block (chapter 9's prefix sharing)."""
         self._refcount[block] += 1

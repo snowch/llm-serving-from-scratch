@@ -6,17 +6,15 @@
 # The book *builder* is not here — MyST comes from npm, pinned in package.json, so there is
 # exactly one source of truth for its version. Nor is any Jupyter tooling: chapters contain no
 # executable cells, so building the book needs neither a kernel nor torch.
+#
+# The list is short on purpose, and was shorter than it looked for a while: it once pinned
+# fastapi, uvicorn, transformers, tokenizers, safetensors, httpx, pandas and matplotlib, none of
+# which anything imported. The engine is written from scratch (that is the title), chapter 24's
+# API layer is deliberately framework-free, and every figure in the book is a markdown table
+# rendered from JSON rather than a plot. A pin nothing imports is a version claim nobody checks.
 
 # --- engine ---
 torch==2.14.0
-transformers==5.17.0
-tokenizers==0.23.2
-safetensors==0.8.0
-fastapi==0.141.1
-uvicorn==0.52.4
-httpx==0.28.1
 
 # --- benchmarking and figures ---
 numpy==2.4.6
-pandas==3.0.5
-matplotlib==3.11.2

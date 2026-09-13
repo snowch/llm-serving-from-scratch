@@ -25,10 +25,12 @@ git checkout ch07-continuous-batching   # the engine exactly as it stood at the 
 | ch16 | `ch16-constrained` | grammar-constrained decoding | validity at near-zero cost |
 | ch17 | `ch17-tensor-parallel` | multi-GPU tensor parallelism | larger models fit |
 | ch18 | `ch18-multi-replica` | router with cache-aware policies | horizontal scaling |
-| ch19 | `ch19-multi-tenant` | batched LoRA adapters, quotas | many adapters, one base |
-| ch24 | `ch24-openai-api` | OpenAI-compatible server, streaming, cancellation | wasted work recovered |
+| ch19 | `ch19-multi-tenant` | batched LoRA adapters, weighted fair queueing | many adapters, one base |
+| ch22 | `ch22-cancellable` | abort for abandoned requests | work recovered from callers who left |
+| ch24 | `ch24-openai-api` | chat templates, SSE streaming, usage accounting | template bugs made visible |
 | ch25 | `ch25-observable` | metrics and OTel traces | — |
-| ch26 | `ch26-resilient` | shedding, drain, fault handling | behaviour past saturation |
+| ch26 | `ch26-resilient` | load shedding and draining | goodput past saturation |
+| ch28 | `ch28-benchmarked` | closed-loop generator, for contrast | coordinated omission, measured |
 | ch29 | `v1.0` | the finished engine | full table |
 
 Tags are created as each chapter is completed; rows above without a tag in the repository yet

@@ -1,5 +1,6 @@
-# Lint and test tooling. Installed by the quality workflow, which deliberately does not
-# install torch — the CPU test tier must stay fast.
+# Lint and test tooling. The quality workflow installs this *and* requirements.txt: the test
+# suite imports torch, and installing only this file made CI unable to run a single test while
+# still reporting success on lint.
 # Versions verified 2026-09-13.
 ruff==0.16.7
 pytest==9.1.1

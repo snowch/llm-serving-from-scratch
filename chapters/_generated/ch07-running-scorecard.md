@@ -2,9 +2,9 @@
 
 | Configuration | TTFT p50 | TTFT p95 | ITL p50 | Output tok/s | Goodput req/s |
 |---|---|---|---|---|---|
-| ch01 Naive | 4.811s | 8.463s | 0.0137s | 74.49 | 0.277 |
-| ch05 KV cache | 1.35s | 2.336s | 0.0047s | 199.9 | 2.477 |
-| ch06 Static batching | 0.2758s | 0.4816s | 0.0104s | 369.2 | 10.98 |
-| ch07 Continuous batching | 0.0219s | 0.0258s | 0.0116s | 457.3 | 13.6 |
+| ch01 Naive | 2.79s | 5.718s | 0.0114s | 86.19 | 0.532 |
+| ch05 KV cache | 0.8138s | 1.626s | 0.0044s | 208.2 | 3.855 |
+| ch06 Static batching | 0.1675s | 0.3899s | 0.0088s | 359.4 | 11.09 |
+| ch07 Continuous batching | 0.019s | 0.0253s | 0.0084s | 417.9 | 12.9 |
 
-*Conditions: TinyGPT (reference, random weights) (5,838,080 params), 4x x86_64 CPU, torch 2.14.0+cu130, poisson, prompt 32-96, output 16-48, seed 7, arrival rate 16.0/s, measured 2026-09-13T15:28:33+00:00.*
+*Conditions: TinyGPT (reference, random weights) (5,838,080 params), 4x x86_64 CPU, torch 2.14.0+cu130, poisson, prompt 32-96, output 16-48, seed 7, arrival rate 16.0/s, measured 2026-09-13T19:41:51+00:00.*

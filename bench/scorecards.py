@@ -76,12 +76,78 @@ SCORECARDS: dict[str, list[tuple[str, str]]] = {
         ("ch07 One pool, 16 req/s", "onepool-rate16-tier1"),
         ("ch11 Two pools, 16 req/s", "disagg-rate16-tier1"),
     ],
+    "ch12-gqa": [
+        ("MHA, 8 KV heads", "attn-kv8-tier1"),
+        ("GQA 2:1, 4 KV heads", "attn-kv4-tier1"),
+        ("GQA 4:1, 2 KV heads", "attn-kv2-tier1"),
+        ("MQA, 1 KV head", "attn-kv1-tier1"),
+    ],
     # The running scorecard: the whole journey so far, at one saturating rate.
     "ch07-running-scorecard": [
         ("ch01 Naive", "naive-rate16-tier1"),
         ("ch05 KV cache", "cached-rate16-tier1"),
         ("ch06 Static batching", "static-rate16-tier1"),
         ("ch07 Continuous batching", "continuous-rate16-tier1"),
+    ],
+}
+
+#: fragment name -> result files a *derived* fragment reads.
+#:
+#: Derived fragments compute their rows rather than tabulating a result set, so they do not appear
+#: in ``SCORECARDS``. They still rest on stamped results, and without this declaration those
+#: results would escape ``verify-numbers.py`` entirely: nothing would notice that a quantisation
+#: or speculation figure was produced by code that has since changed. Fragments computed purely
+#: from the model config — chapter 8's memory table, chapter 11's handoff table, chapter 12's
+#: footprint and score-matrix tables — read no results and are correctly absent.
+DERIVED_SOURCES: dict[str, list[str]] = {
+    "ch03-arithmetic": ["cached-rate1-tier1", "naive-rate1-tier1"],
+    "ch10-chunk-cost": ["chunk-cost-tier1"],
+    "ch14-quantisation": ["quant-tier1"],
+    "ch14-kv-quantisation": ["quant-tier1"],
+    "ch14-outliers": ["quant-tier1"],
+    "ch15-acceptance": ["speculative-tier1"],
+    "ch15-distribution": ["speculative-tier1"],
+    "ch16-validity": ["constrained-tier1"],
+    "ch16-mask-cost": ["constrained-tier1"],
+    "ch18-routing": [
+        "router-round-robin-tier1",
+        "router-least-tokens-tier1",
+        "router-prefix-affinity-tier1",
+    ],
+    "ch19-quality": ["lora-tier1"],
+    "ch19-batch": ["lora-tier1"],
+    "ch19-fairness": ["tenants-fifo-tier1", "tenants-fair-tier1"],
+    "ch20-workloads": [
+        "workload-chat-tier1",
+        "workload-rag-tier1",
+        "workload-agent-tier1",
+        "workload-completion-tier1",
+    ],
+    "ch20-turns": ["chat-patterns-tier1"],
+    "ch20-batch": ["chat-patterns-tier1"],
+    "ch21-interference": ["rag-tier1"],
+    "ch22-chains": ["agents-tier1"],
+    "ch22-cancellation": ["agents-tier1"],
+    "ch23-completion": ["offline-tier1"],
+    "ch23-offline": ["offline-tier1"],
+    "ch24-templates": ["api-tier1"],
+    "ch25-signals": ["observability-tier1"],
+    "ch25-overhead": ["observability-tier1"],
+    "ch26-shedding": ["reliability-tier1"],
+    "ch26-drain": ["reliability-tier1"],
+    "ch28-generators": ["benchmarking-tier1"],
+    "ch29-journey": [
+        "naive-rate16-tier1",
+        "cached-rate16-tier1",
+        "static-rate16-tier1",
+        "continuous-rate16-tier1",
+        "paged-rate16-tier1",
+        "paged-chat-rate8-tier1",
+        "prefix-chat-rate8-tier1",
+        "chunked-budget512-tier1",
+        "disagg-rate16-tier1",
+        "router-prefix-affinity-tier1",
+        "tenants-fair-tier1",
     ],
 }
 
@@ -98,4 +164,17 @@ CONDITIONS: dict[str, str] = {
     "ch09-prefix-caching": "prefix-chat-rate8-tier1",
     "ch10-token-budget": "chunked-budget512-tier1",
     "ch11-disaggregation": "disagg-rate16-tier1",
+    "ch12-gqa": "attn-kv2-tier1",
+    "ch18-routing": "router-prefix-affinity-tier1",
+    "ch19-quality": "lora-tier1",
+    "ch19-fairness": "tenants-fair-tier1",
+    "ch20-workloads": "workload-chat-tier1",
+    "ch20-batch": "chat-patterns-tier1",
+    "ch21-interference": "rag-tier1",
+    "ch22-chains": "agents-tier1",
+    "ch23-offline": "offline-tier1",
+    "ch24-templates": "api-tier1",
+    "ch25-signals": "observability-tier1",
+    "ch26-shedding": "reliability-tier1",
+    "ch28-generators": "benchmarking-tier1",
 }

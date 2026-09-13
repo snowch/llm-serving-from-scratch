@@ -1,0 +1,100 @@
+{
+  "engine": "lora",
+  "generated_at": "2026-09-13T19:34:08+00:00",
+  "hardware": {
+    "platform": "Linux-6.18.44-fc-v24-x86_64-with-glibc2.39",
+    "machine": "x86_64",
+    "processor": "x86_64",
+    "cpu_count": 4,
+    "device": "cpu"
+  },
+  "model": {
+    "name": "TinyGPT, trained on the synthetic corpus",
+    "params": 5838080,
+    "vocab_size": 260,
+    "n_layers": 6,
+    "n_heads": 8,
+    "n_kv_heads": 2,
+    "head_dim": 32,
+    "ffn_mult": 4,
+    "max_seq_len": 2048,
+    "rope_theta": 10000.0,
+    "norm_eps": 1e-05,
+    "dtype": "fp32",
+    "seed": 0
+  },
+  "versions": {
+    "python": "3.11.15",
+    "torch": "2.14.0+cu130",
+    "numpy": "2.4.6"
+  },
+  "code_fingerprint": "38b69b0f3489ef21",
+  "code_sources": [
+    "llmserve/lora.py",
+    "bench/train_lora.py",
+    "bench/train_tiny.py"
+  ],
+  "conditions": {
+    "trace": "held-out synthetic corpus per tenant; decode-step timing",
+    "train_steps": 400,
+    "adapter_steps": 300,
+    "batch_size": 8,
+    "context": 128,
+    "base_perplexity": 1.8321
+  },
+  "summary": {
+    "quality": {
+      "alice": {
+        "base": 5.3462653160095215,
+        "alice": 2.1390879154205322,
+        "bob": 3.866281747817993
+      },
+      "bob": {
+        "base": 5.155489444732666,
+        "alice": 4.161117076873779,
+        "bob": 2.3614721298217773
+      }
+    },
+    "memory": {
+      "rank": 8,
+      "targets": [
+        "q_proj",
+        "v_proj"
+      ],
+      "base_params": 5838080,
+      "adapter_params": 39936
+    },
+    "batch": [
+      {
+        "case": "No adapter (base model)",
+        "distinct": 0,
+        "ms": 6.316
+      },
+      {
+        "case": "One adapter, whole batch",
+        "distinct": 1,
+        "ms": 6.653
+      },
+      {
+        "case": "2 adapters in one batch",
+        "distinct": 2,
+        "ms": 8.91
+      },
+      {
+        "case": "4 adapters in one batch",
+        "distinct": 4,
+        "ms": 11.128
+      },
+      {
+        "case": "8 adapters in one batch",
+        "distinct": 8,
+        "ms": 15.374
+      },
+      {
+        "case": "Merged into the weights",
+        "distinct": 1,
+        "ms": 6.403
+      }
+    ]
+  }
+}

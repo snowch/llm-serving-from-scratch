@@ -52,8 +52,33 @@ class PrefixCachedEngine(PagedEngine):
         """
         while self.cache.allocator.n_free < n:
             block = self.prefix.evict_oldest()
+            if block is not None:
+                # A block still held by a live sequence does not return to the pool on this call;
+                # dropping the cache's reference is still correct, and the loop simply continues.
+                self.cache.allocator.free([block])
+                continue
+            if not self._preempt_newest():
+                return False
+        return True
+
+    def _make_room(self, n: int) -> bool:
+        """Give up cached prefixes so a queued request can be admitted.
+
+        Without this the cache starves the scheduler, and the failure is total rather than gradual.
+        Cached blocks are held with a reference, so to the admission loop a warm cache is
+        indistinguishable from a full pool: it refuses to admit anything, every running sequence
+        eventually finishes and publishes *more* blocks into the cache, and the engine then spins
+        forever with a full queue and an empty batch. Memory whose only purpose is to make future
+        work cheaper must lose to work that cannot start at all.
+
+        Deliberately no preemption here. Evicting a running sequence to admit a queued one is not
+        scheduling, it is thrash; that stays in :meth:`_free_blocks_for`, where a sequence already
+        admitted needs blocks it was promised.
+        """
+        while self.cache.allocator.n_free < n:
+            block = self.prefix.evict_oldest()
             if block is None:
-                return self._preempt_newest()
+                return False
             self.cache.allocator.free([block])
         return True
 

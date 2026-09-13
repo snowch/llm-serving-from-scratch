@@ -130,3 +130,49 @@ def test_prefix_engine_matches_paged_engine(model, specs):
     paged = PagedEngine(model, REFERENCE_MODEL, n_blocks=256, block_size=16)
     prefix = PrefixCachedEngine(model, REFERENCE_MODEL, n_blocks=256, block_size=16)
     assert _drain(prefix, specs) == _drain(paged, specs)
+
+
+def test_the_cache_gives_up_blocks_so_the_scheduler_can_admit(model):
+    """Regression: a full prefix cache used to stall the engine completely.
+
+    Cached blocks are held with a reference, so to the admission loop a warm cache is
+    indistinguishable from a full pool. The engine refused to admit anything; every running
+    sequence finished and published *more* blocks into the cache; and the engine then span forever
+    with a full queue and an empty batch. Not a slowdown — a stall, with work available and the
+    memory to do it held by a cache whose only purpose was to make that work cheaper.
+    """
+
+    class WithoutMakeRoom(PrefixCachedEngine):
+        """The engine as it was: admission sees only blocks that are already free."""
+
+        def _make_room(self, n: int) -> bool:
+            return False
+
+    def serve(cls) -> dict:
+        engine = cls(model, REFERENCE_MODEL, max_batch_size=2, n_blocks=24, block_size=16)
+        for i in range(8):
+            # Distinct prompts, so each fills the cache with blocks nobody else will ask for.
+            prompt = [((i * 977 + j) % 200) + 33 for j in range(96)]
+            engine.add_request(
+                Request(prompt_token_ids=prompt, params=SamplingParams(max_tokens=4))
+            )
+        idle = 0
+        finished = set()
+        for _ in range(400):
+            if not engine.has_work():
+                break
+            outputs = engine.step()
+            finished |= {o.request_id for o in outputs if o.finished}
+            idle = idle + 1 if not outputs else 0
+            if idle > 20:
+                break
+        return {"finished": len(finished), "stalled": idle > 20, "waiting": len(engine.waiting)}
+
+    before = serve(WithoutMakeRoom)
+    assert before["stalled"] and before["waiting"] > 0, (
+        "the regression no longer reproduces; this test is not testing anything"
+    )
+
+    after = serve(PrefixCachedEngine)
+    assert not after["stalled"]
+    assert after["finished"] == 8

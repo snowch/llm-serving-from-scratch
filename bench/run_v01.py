@@ -33,7 +33,10 @@ ENGINES = {
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--requests", type=int, default=20)
-    parser.add_argument("--rates", type=float, nargs="+", default=[0.5, 1.0, 2.0])
+    # The rates the chapters cite. A default that produced a *different* set left the cited files
+    # behind on every regeneration, unnoticed, because nothing checked results the book did not
+    # name — so the documented command must regenerate exactly what the book reads.
+    parser.add_argument("--rates", type=float, nargs="+", default=[1.0, 4.0, 8.0, 16.0])
     parser.add_argument("--threads", type=int, default=4)
     parser.add_argument("--tag", default="tier1")
     args = parser.parse_args()

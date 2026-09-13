@@ -1,0 +1,68 @@
+{
+  "engine": "api",
+  "generated_at": "2026-09-13T19:11:52+00:00",
+  "hardware": {
+    "platform": "Linux-6.18.44-fc-v24-x86_64-with-glibc2.39",
+    "machine": "x86_64",
+    "processor": "x86_64",
+    "cpu_count": 4,
+    "device": "cpu"
+  },
+  "model": {
+    "name": "TinyGPT (reference, random weights)",
+    "params": 5838080,
+    "vocab_size": 260,
+    "n_layers": 6,
+    "n_heads": 8,
+    "n_kv_heads": 2,
+    "head_dim": 32,
+    "ffn_mult": 4,
+    "max_seq_len": 2048,
+    "rope_theta": 10000.0,
+    "norm_eps": 1e-05,
+    "dtype": "fp32",
+    "seed": 0
+  },
+  "versions": {
+    "python": "3.11.15",
+    "torch": "2.14.0+cu130",
+    "numpy": "2.4.6"
+  },
+  "code_fingerprint": "0bbead89f8554867",
+  "code_sources": [
+    "llmserve/api.py",
+    "llmserve/engines/prefix.py"
+  ],
+  "conditions": {
+    "trace": "6 sessions x 4 turns, rendered three ways",
+    "slo": {
+      "ttft_seconds": 1.0,
+      "itl_seconds": 0.05
+    }
+  },
+  "summary": {
+    "templates": [
+      {
+        "variant": "stable",
+        "description": "system prompt identical on every request",
+        "requests": 24,
+        "prompt_tokens": 21096,
+        "token_reuse": 0.8593
+      },
+      {
+        "variant": "per-request value",
+        "description": "a timestamp injected at the top of the system prompt",
+        "requests": 24,
+        "prompt_tokens": 21960,
+        "token_reuse": 0.6601
+      },
+      {
+        "variant": "system prompt last",
+        "description": "conversation first, system prompt at the end",
+        "requests": 24,
+        "prompt_tokens": 21096,
+        "token_reuse": 0.6887
+      }
+    ]
+  }
+}

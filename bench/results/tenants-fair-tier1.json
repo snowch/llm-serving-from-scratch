@@ -1,0 +1,92 @@
+{
+  "engine": "tenant-fair",
+  "generated_at": "2026-09-13T19:09:47+00:00",
+  "hardware": {
+    "platform": "Linux-6.18.44-fc-v24-x86_64-with-glibc2.39",
+    "machine": "x86_64",
+    "processor": "x86_64",
+    "cpu_count": 4,
+    "device": "cpu"
+  },
+  "model": {
+    "name": "TinyGPT (reference, random weights)",
+    "params": 5838080,
+    "vocab_size": 260,
+    "n_layers": 6,
+    "n_heads": 8,
+    "n_kv_heads": 2,
+    "head_dim": 32,
+    "ffn_mult": 4,
+    "max_seq_len": 2048,
+    "rope_theta": 10000.0,
+    "norm_eps": 1e-05,
+    "dtype": "fp32",
+    "seed": 0
+  },
+  "versions": {
+    "python": "3.11.15",
+    "torch": "2.14.0+cu130",
+    "numpy": "2.4.6"
+  },
+  "code_fingerprint": "795b351a165daead",
+  "code_sources": [
+    "llmserve/engines/paged.py",
+    "llmserve/engines/prefix.py",
+    "llmserve/engines/tenant.py"
+  ],
+  "conditions": {
+    "rate_per_second": 4.0,
+    "slo": {
+      "ttft_seconds": 1.0,
+      "itl_seconds": 0.05
+    },
+    "trace": "noisy neighbour: 30 requests across 3 tenants",
+    "scheduler": "fair",
+    "torch_threads": 4,
+    "service_share": {
+      "alice": 0.07142857142857142,
+      "bob": 0.07142857142857142,
+      "hog": 0.8571428571428571
+    }
+  },
+  "summary": {
+    "requests": 30,
+    "completed": 30,
+    "ttft_p50": 0.5352,
+    "ttft_p95": 4.4271,
+    "ttft_p99": 4.5374,
+    "itl_p50": 0.0334,
+    "itl_p95": 0.0377,
+    "output_tokens_per_second": 221.27,
+    "requests_per_second": 4.939,
+    "goodput_per_second": 2.799,
+    "goodput_fraction": 0.567,
+    "wall_time": 6.074,
+    "by_tenant": {
+      "alice": {
+        "requests": 6,
+        "completed": 6,
+        "ttft_p50": 0.1602,
+        "ttft_p95": 0.5231,
+        "output_tokens": 96,
+        "goodput_fraction": 1.0
+      },
+      "bob": {
+        "requests": 6,
+        "completed": 6,
+        "ttft_p50": 0.0284,
+        "ttft_p95": 0.6094,
+        "output_tokens": 96,
+        "goodput_fraction": 1.0
+      },
+      "hog": {
+        "requests": 18,
+        "completed": 18,
+        "ttft_p50": 2.1969,
+        "ttft_p95": 4.5374,
+        "output_tokens": 1152,
+        "goodput_fraction": 0.278
+      }
+    }
+  }
+}

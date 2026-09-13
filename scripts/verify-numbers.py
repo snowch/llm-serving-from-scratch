@@ -5,7 +5,9 @@ Every figure in the book comes from a result file in ``bench/results/``, rendere
 under ``chapters/_generated/`` by ``scripts/render-scorecards.py``. Four rules, so a wrong number
 fails the build rather than reaching a reader:
 
-1. Every result a scorecard cites exists.
+1. Every result a scorecard cites exists — including the ones a *derived* fragment computes
+   from, which are declared in ``bench.scorecards.DERIVED_SOURCES`` precisely so they cannot
+   escape these checks by not appearing in a plain table.
 2. Every such result carries its stamps — model, hardware, versions, date. A performance number
    whose conditions are unknown cannot be checked by anyone, including us in six months.
 3. Every result was produced by the code that is checked in. This is a **content hash** over the
@@ -30,7 +32,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from bench.harness import code_fingerprint  # noqa: E402
-from bench.scorecards import CONDITIONS, SCORECARDS  # noqa: E402
+from bench.scorecards import CONDITIONS, DERIVED_SOURCES, SCORECARDS  # noqa: E402
 
 RESULTS = ROOT / "bench" / "results"
 REQUIRED_STAMPS = ("model", "hardware", "generated_at", "versions", "summary")
@@ -43,15 +45,25 @@ HARDCODED_FIGURE = re.compile(r"\b\d+\.\d+\s*(?:[x×]|ms\b|s\b|GB/s\b|tok/s\b)")
 
 def cited_results() -> set[str]:
     names = {name for rows in SCORECARDS.values() for _, name in rows}
+    names |= {name for sources in DERIVED_SOURCES.values() for name in sources}
     return names | set(CONDITIONS.values())
 
 
 def check_results(problems: list[str]) -> None:
+    """Every cited result must exist, and *every* result must be current.
+
+    Checking only the cited ones was not enough. A runner whose default arguments no longer produce
+    the files the book cites leaves those files behind, unregenerated and unnoticed — which is
+    exactly what happened: ``run_v01`` defaulted to a set of arrival rates that did not include the
+    ones the chapters cite, so a full regeneration silently skipped them and they rotted for
+    several commits. Stamping every file in the directory costs nothing and closes that door.
+    """
     for name in sorted(cited_results()):
-        path = RESULTS / f"{name}.json"
-        if not path.exists():
+        if not (RESULTS / f"{name}.json").exists():
             problems.append(f"missing result: bench/results/{name}.json (cited by a scorecard)")
-            continue
+
+    for path in sorted(RESULTS.glob("*.json")):
+        name = path.stem
         try:
             payload = json.loads(path.read_text())
         except json.JSONDecodeError as exc:
@@ -65,10 +77,11 @@ def check_results(problems: list[str]) -> None:
         recorded = payload.get("code_fingerprint")
         if recorded is None:
             problems.append(f"{name}.json has no code_fingerprint — regenerate it")
-        elif recorded != code_fingerprint(payload.get("engine_module")):
+        elif recorded != code_fingerprint(payload.get("code_sources")):
             problems.append(
                 f"{name}.json was produced by different code than is checked in — regenerate "
-                "with the matching bench/run_*.py"
+                f"with the runner that writes it (`grep -rl {name} bench/run_*.py`), or delete it "
+                "if nothing produces it any more"
             )
 
 

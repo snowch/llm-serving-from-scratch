@@ -10,6 +10,6 @@
 | Measured decode rate, one stream | 217 tok/s | measured |
 | Implied achieved bandwidth | 5.14 GB/s | derived |
 | Predicted no-cache penalty | 27.5x | from FLOPs alone |
-| Measured no-cache penalty | 2.85x | measured |
+| Measured no-cache penalty | 2.57x | measured |
 
-*Conditions: TinyGPT (reference, random weights) (5,838,080 params), 4x x86_64 CPU, torch 2.14.0+cu130, poisson, prompt 32-96, output 16-48, seed 7, arrival rate 1.0/s, measured 2026-09-13T15:26:06+00:00.*
+*Conditions: TinyGPT (reference, random weights) (5,838,080 params), 4x x86_64 CPU, torch 2.14.0+cu130, poisson, prompt 32-96, output 16-48, seed 7, arrival rate 1.0/s, measured 2026-09-13T19:39:44+00:00.*

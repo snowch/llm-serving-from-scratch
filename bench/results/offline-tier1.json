@@ -1,0 +1,107 @@
+{
+  "engine": "offline",
+  "generated_at": "2026-09-13T19:11:42+00:00",
+  "hardware": {
+    "platform": "Linux-6.18.44-fc-v24-x86_64-with-glibc2.39",
+    "machine": "x86_64",
+    "processor": "x86_64",
+    "cpu_count": 4,
+    "device": "cpu"
+  },
+  "model": {
+    "name": "TinyGPT (reference, random weights)",
+    "params": 5838080,
+    "vocab_size": 260,
+    "n_layers": 6,
+    "n_heads": 8,
+    "n_kv_heads": 2,
+    "head_dim": 32,
+    "ffn_mult": 4,
+    "max_seq_len": 2048,
+    "rope_theta": 10000.0,
+    "norm_eps": 1e-05,
+    "dtype": "fp32",
+    "seed": 0
+  },
+  "versions": {
+    "python": "3.11.15",
+    "torch": "2.14.0+cu130",
+    "numpy": "2.4.6"
+  },
+  "code_fingerprint": "688f8ea923daf213",
+  "code_sources": [
+    "llmserve/engines/prefix.py",
+    "llmserve/engines/paged.py"
+  ],
+  "conditions": {
+    "trace": "code completion at a fixed rate; offline batch with every request at t=0",
+    "rate_per_second": 16.0,
+    "batch_requests": 32,
+    "completion_slo": {
+      "ttft_seconds": 0.05,
+      "itl_seconds": 0.05
+    }
+  },
+  "summary": {
+    "completion": [
+      {
+        "max_batch_size": 1,
+        "ttft_p50": 0.5896,
+        "ttft_p95": 0.8509,
+        "output_tokens_per_second": 123.76,
+        "goodput_fraction": 0.0
+      },
+      {
+        "max_batch_size": 4,
+        "ttft_p50": 0.0925,
+        "ttft_p95": 0.3055,
+        "output_tokens_per_second": 172.21,
+        "goodput_fraction": 0.375
+      },
+      {
+        "max_batch_size": 16,
+        "ttft_p50": 0.0472,
+        "ttft_p95": 0.091,
+        "output_tokens_per_second": 171.16,
+        "goodput_fraction": 0.583
+      },
+      {
+        "max_batch_size": 64,
+        "ttft_p50": 0.042,
+        "ttft_p95": 0.0838,
+        "output_tokens_per_second": 172.68,
+        "goodput_fraction": 0.583
+      }
+    ],
+    "offline": [
+      {
+        "max_batch_size": 1,
+        "wall_time": 13.059,
+        "output_tokens_per_second": 152.16,
+        "peak_kv_utilisation": 0.036,
+        "preemptions": 0
+      },
+      {
+        "max_batch_size": 4,
+        "wall_time": 8.14,
+        "output_tokens_per_second": 244.09,
+        "peak_kv_utilisation": 0.036,
+        "preemptions": 0
+      },
+      {
+        "max_batch_size": 16,
+        "wall_time": 8.479,
+        "output_tokens_per_second": 234.34,
+        "peak_kv_utilisation": 0.036,
+        "preemptions": 0
+      },
+      {
+        "max_batch_size": 64,
+        "wall_time": 5.689,
+        "output_tokens_per_second": 349.27,
+        "peak_kv_utilisation": 0.038,
+        "preemptions": 0
+      }
+    ]
+  }
+}

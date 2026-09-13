@@ -101,3 +101,118 @@
   journal = {arXiv preprint arXiv:2307.09702},
   year    = {2023}
 }
+
+% --- ch12: attention, continued ---
+@article{shazeer2019mqa,
+  title   = {Fast Transformer Decoding: One Write-Head is All You Need},
+  author  = {Shazeer, Noam},
+  journal = {arXiv preprint arXiv:1911.02150},
+  year    = {2019},
+  note    = {Multi-query attention: the original observation that the KV cache, not the compute, is the decode bottleneck}
+}
+
+@article{dao2023flashattention2,
+  title   = {FlashAttention-2: Faster Attention with Better Parallelism and Work Partitioning},
+  author  = {Dao, Tri},
+  journal = {arXiv preprint arXiv:2307.08691},
+  year    = {2023}
+}
+
+% --- ch11: disaggregation, continued ---
+@inproceedings{patel2024splitwise,
+  title     = {Splitwise: Efficient Generative LLM Inference Using Phase Splitting},
+  author    = {Patel, Pratyush and Choukse, Esha and Zhang, Chaojie and Shah, Aashaka and Goiri, {\'I}{\~n}igo and Maleki, Saeed and Bianchini, Ricardo},
+  booktitle = {ACM/IEEE 51st Annual International Symposium on Computer Architecture (ISCA 24)},
+  year      = {2024}
+}
+
+% --- ch14: quantisation, continued ---
+@inproceedings{dettmers2022int8,
+  title     = {LLM.int8(): 8-bit Matrix Multiplication for Transformers at Scale},
+  author    = {Dettmers, Tim and Lewis, Mike and Belkada, Younes and Zettlemoyer, Luke},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS 22)},
+  year      = {2022},
+  note      = {The outlier-channel problem, which is why per-channel scaling exists}
+}
+
+@inproceedings{xiao2023smoothquant,
+  title     = {SmoothQuant: Accurate and Efficient Post-Training Quantization for Large Language Models},
+  author    = {Xiao, Guangxuan and Lin, Ji and Seznec, Mickael and Wu, Hao and Demouth, Julien and Han, Song},
+  booktitle = {International Conference on Machine Learning (ICML 23)},
+  year      = {2023}
+}
+
+% --- ch15: speculative decoding, continued ---
+@article{chen2023accelerating,
+  title   = {Accelerating Large Language Model Decoding with Speculative Sampling},
+  author  = {Chen, Charlie and Borgeaud, Sebastian and Irving, Geoffrey and Lespiau, Jean-Baptiste and Sifre, Laurent and Jumper, John},
+  journal = {arXiv preprint arXiv:2302.01318},
+  year    = {2023},
+  note    = {Independent contemporaneous derivation of the same acceptance rule}
+}
+
+@article{cai2024medusa,
+  title   = {Medusa: Simple LLM Inference Acceleration Framework with Multiple Decoding Heads},
+  author  = {Cai, Tianle and Li, Yuhong and Geng, Zhengyang and Peng, Hongwu and Lee, Jason D. and Chen, Deming and Dao, Tri},
+  journal = {arXiv preprint arXiv:2401.10774},
+  year    = {2024}
+}
+
+@article{li2024eagle,
+  title   = {EAGLE: Speculative Sampling Requires Rethinking Feature Uncertainty},
+  author  = {Li, Yuhui and Wei, Fangyun and Zhang, Chao and Zhang, Hongyang},
+  journal = {arXiv preprint arXiv:2401.15077},
+  year    = {2024}
+}
+
+% --- ch16: structured output, continued ---
+@article{dong2024xgrammar,
+  title   = {XGrammar: Flexible and Efficient Structured Generation Engine for Large Language Models},
+  author  = {Dong, Yixin and Ruan, Charlie F. and Cai, Yaxing and Lai, Ruihang and Xu, Ziyi and Zhao, Yilong and Chen, Tianqi},
+  journal = {arXiv preprint arXiv:2411.15100},
+  year    = {2024}
+}
+
+% --- ch19: multi-adapter serving, continued ---
+@inproceedings{chen2024punica,
+  title     = {Punica: Multi-Tenant LoRA Serving},
+  author    = {Chen, Lequn and Ye, Zihao and Wu, Yongji and Zhuo, Danyang and Ceze, Luis and Krishnamurthy, Arvind},
+  booktitle = {Proceedings of Machine Learning and Systems (MLSys 24)},
+  year      = {2024}
+}
+
+@article{hu2021lora,
+  title   = {LoRA: Low-Rank Adaptation of Large Language Models},
+  author  = {Hu, Edward J. and Shen, Yelong and Wallis, Phillip and Allen-Zhu, Zeyuan and Li, Yuanzhi and Wang, Shean and Wang, Lu and Chen, Weizhu},
+  journal = {arXiv preprint arXiv:2106.09685},
+  year    = {2021},
+  note    = {Contains the ablation over which projections to adapt}
+}
+
+% --- ch19: fair queueing ---
+@article{shreedhar1996drr,
+  title   = {Efficient Fair Queuing Using Deficit Round-Robin},
+  author  = {Shreedhar, M. and Varghese, George},
+  journal = {IEEE/ACM Transactions on Networking},
+  volume  = {4},
+  number  = {3},
+  year    = {1996}
+}
+
+% --- ch17: parallelism ---
+@article{shoeybi2019megatron,
+  title   = {Megatron-LM: Training Multi-Billion Parameter Language Models Using Model Parallelism},
+  author  = {Shoeybi, Mohammad and Patwary, Mostofa and Puri, Raul and LeGresley, Patrick and Casper, Jared and Catanzaro, Bryan},
+  journal = {arXiv preprint arXiv:1909.08053},
+  year    = {2019},
+  note    = {The tensor-parallel layer split every serving engine still uses}
+}
+
+% --- ch02, ch28: measurement ---
+@misc{tene2015omission,
+  title        = {How NOT to Measure Latency},
+  author       = {Tene, Gil},
+  year         = {2015},
+  howpublished = {Conference talk},
+  note         = {The clearest statement of coordinated omission}
+}
