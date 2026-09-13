@@ -501,13 +501,15 @@ def fairness_table() -> str:
     tenants = sorted(next(iter(per_run.values())).get("by_tenant", {}))
 
     lines = [
-        "| Scheduler | " + " | ".join(f"{t} TTFT p95" for t in tenants) + " | Completed |",
-        "|---" * (len(tenants) + 2) + "|",
+        "| Scheduler | " + " | ".join(f"{t} TTFT p95 / met SLO" for t in tenants) + " |",
+        "|---" * (len(tenants) + 1) + "|",
     ]
     for label, summary in per_run.items():
         by_tenant = summary.get("by_tenant", {})
-        cells = " | ".join(f"{by_tenant[t]['ttft_p95']}s" for t in tenants)
-        lines.append(f"| {label} | {cells} | {summary['completed']} |")
+        cells = " | ".join(
+            f"{by_tenant[t]['ttft_p95']}s / {by_tenant[t]['goodput_fraction']:.0%}" for t in tenants
+        )
+        lines.append(f"| {label} | {cells} |")
     return "\n".join(lines)
 
 
@@ -693,12 +695,12 @@ def shedding_table(name: str = "reliability-tier1") -> str:
     """Goodput under overload, with and without admission control."""
     rows = load(name)["summary"]["policies"]
     lines = [
-        "| Policy | Rejected | Completed | TTFT p95 | Goodput req/s | Output tok/s |",
+        "| Policy | Refused | Served | TTFT p95 | Goodput req/s | Output tok/s |",
         "|---|---|---|---|---|---|",
     ]
     for row in rows:
         lines.append(
-            f"| {row['policy']} | {row['rejected']} | {row['completed']} | {row['ttft_p95']}s | "
+            f"| {row['policy']} | {row['rejected']} | {row['served']} | {row['ttft_p95']}s | "
             f"{row['goodput_per_second']} | {row['output_tokens_per_second']} |"
         )
     return "\n".join(lines)

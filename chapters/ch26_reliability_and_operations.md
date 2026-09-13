@@ -33,7 +33,7 @@ properly:
 ```{include} _generated/ch26-shedding.md
 ```
 
-Rejecting a quarter of the requests **doubles goodput and cuts the tail latency to a quarter of its
+Refusing half the offered requests **doubles goodput and cuts the tail latency to a quarter of its
 value**. Throughput is essentially unchanged, which is the point: the engine was always producing
 tokens at the same rate, and shedding changed how many of them belonged to a request that still had
 a future.
@@ -149,7 +149,7 @@ untouched. The defence is not monitoring; it is the equivalence and distribution
 
 ## Key takeaways
 
-- **An overloaded engine that accepts everything serves nothing well.** Refusing a quarter of the
+- **An overloaded engine that accepts everything serves nothing well.** Refusing half the offered
   requests doubled goodput here and cut the tail fourfold.
 - Shed on queue depth and KV utilisation. Never on CPU utilisation.
 - **Reject explicitly and fast.** A dropped connection is indistinguishable from a hang, and the

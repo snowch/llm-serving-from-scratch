@@ -115,17 +115,16 @@ engine. The only thing that changes between runs is the policy.
 Read the last two columns first, because they explain the first three.
 
 Round-robin scatters: each of the six prefixes is spread across all four replicas, so every replica
-ends up computing every prefix and reuse is low. Least-outstanding-tokens does slightly better on
-reuse, entirely by accident — its tie-breaking clusters requests a little — and slightly *worse* on
-median time to first token. **The smarter balancing policy did not help.** That is the result worth
-sitting with: the whole gain in this chapter comes from the policy that stops balancing, not from
-the one that balances better.
+ends up computing every prefix and reuse is low. Least-outstanding-tokens improves on it a little —
+its tie-breaking happens to cluster requests, so reuse rises — and the improvement is a fraction of
+what the next row gets. Both policies end up perfectly balanced and both serve **no** requests inside
+the objective. **Balancing better was not the answer.** That is the result worth sitting with: almost
+the whole gain in this chapter comes from the policy that stops balancing.
 
-Prefix affinity is a different regime. Reuse roughly doubles, median TTFT drops by most of its
-value, and goodput goes from nothing to something — under this SLO the two balancing policies serve
-*no* requests inside the objective, and prefix affinity serves real traffic. Nothing about the
-hardware changed. The same four replicas, the same trace, the same engine; only the choice of where
-each request went.
+Prefix affinity is a different regime. Reuse more than doubles against round-robin, median TTFT
+falls to a fraction of its value, and goodput goes from nothing to real traffic served inside the
+objective. Nothing about the hardware changed. The same four replicas, the same trace, the same
+engine; only the choice of where each request went.
 
 And it paid for that with the imbalance column. The busiest replica carries meaningfully more than
 an even share, which is not a flaw in the policy — it is arithmetic. Six prefixes hashed onto four
@@ -208,7 +207,8 @@ starts, and — for planned changes — starting the new replica before draining
 - Round-robin is the wrong LLM load balancer. It balances request counts, which correlate with
   neither cost nor cache locality, and it actively destroys the prefix cache.
 - Least-outstanding-*tokens* is the right generic policy — a token is nearly a unit of work, a
-  connection is not — but on this trace it bought almost nothing. Balancing better is not the win.
+  connection is not — but on this trace it bought a fraction of what abandoning balance did.
+  Balancing better is not the win.
 - **Cache-aware routing is the win, and it works by refusing to balance.** Concentrating a prefix
   on one replica beats spreading it, by enough to turn zero goodput into real goodput.
 - Cache-aware routing must carry an imbalance guard, or one hot prefix pins the whole fleet to one

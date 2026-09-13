@@ -170,13 +170,16 @@ the scheduler:
 ```{include} _generated/ch19-fairness.md
 ```
 
-Under first-come-first-served the quiet tenants' tail is as bad as the noisy one's. They did nothing
-to deserve it; they simply queued behind eighteen large requests. Under fair queueing their tails
-collapse and they meet the objective, while the noisy tenant's tail stays roughly where it was.
+Under first-come-first-served the quiet tenants' tail is as bad as the noisy one's, and most of their
+requests miss the objective. They did nothing to deserve it; they simply queued behind a burst of
+large requests somebody else submitted. Under fair queueing their tails collapse and **every one of
+their requests meets the objective**.
 
-That last part is the important one, and it is why this is isolation rather than a speedup. **The
-total work is unchanged.** The scheduler moved the waiting onto the tenant that caused it. Nobody
-got a faster machine; one tenant stopped being able to spend everyone else's latency budget.
+Now look at the noisy tenant's column. Its tail barely moves, and the fraction of its requests
+meeting the objective *falls*. That is the point, and it is why this is isolation rather than a
+speedup: **the total work is unchanged.** The scheduler moved the waiting onto the tenant that caused
+it. Nobody got a faster machine; one tenant stopped being able to spend everyone else's latency
+budget.
 
 ## The cost
 

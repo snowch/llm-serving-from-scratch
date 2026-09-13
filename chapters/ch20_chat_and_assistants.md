@@ -25,8 +25,9 @@ the shape of the traffic:
 ```
 
 This table is the argument for the whole of Part VI, and the row to look at first is the agent one.
-It has the **longest prompts in the table** and the **best time to first token**. Retrieval, with
-prompts of almost exactly the same length, is two orders of magnitude worse.
+It has the **longest prompts in the table** and a time to first token indistinguishable from the two
+rows with the *shortest* prompts. Retrieval, whose prompts are almost exactly as long as the agent
+workload's, is nearly two orders of magnitude worse.
 
 So prompt length does not predict cost. **Reusable prompt length does.** The agent workload replays
 a transcript, so nearly every token has been seen before and prefill barely happens; retrieval

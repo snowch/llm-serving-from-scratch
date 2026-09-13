@@ -98,12 +98,15 @@ def main() -> None:
             meta={"model": model_meta, "trace": "overload", "policy": label},
         )
         s = result.summary()
+        rejected = getattr(engine, "rejected", 0)
         rows.append(
             {
                 "policy": label,
-                "rejected": getattr(engine, "rejected", 0),
+                "rejected": rejected,
+                # A rejection ends the request, so the harness counts it as completed. Reporting
+                # that number as "completed" would claim the shedding engine served everything.
+                "served": s["completed"] - rejected,
                 "ttft_p95": s["ttft_p95"],
-                "completed": s["completed"],
                 "goodput_per_second": s["goodput_per_second"],
                 "output_tokens_per_second": s["output_tokens_per_second"],
             }
