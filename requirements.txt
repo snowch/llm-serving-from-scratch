@@ -1,0 +1,24 @@
+# Python dependencies for LLM Serving from Scratch.
+#
+# Pinned deliberately: this book makes performance claims, and an unpinned dependency
+# invalidates them silently (PLAN.md §12.4). Versions verified 2026-09-13.
+#
+# The book *builder* is not here — MyST comes from npm, pinned in package.json, so there is
+# exactly one source of truth for its version.
+
+# --- notebook/markdown interop ---
+jupytext==1.19.5
+
+# --- engine ---
+torch==2.14.0
+transformers==5.17.0
+tokenizers==0.23.2
+safetensors==0.8.0
+fastapi==0.141.1
+uvicorn==0.52.4
+httpx==0.28.1
+
+# --- benchmarking and figures ---
+numpy==2.4.6
+pandas==3.0.5
+matplotlib==3.11.2

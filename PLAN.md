@@ -264,8 +264,9 @@ about GPU serving whose examples nobody can run is a blog post with extra steps.
   a later Tier 1 chapter, so a laptop-only reader can complete the main arc.
 - The engine is written so the device is a parameter, not an assumption. CPU is a supported
   backend, not a degraded mode.
-- CI runs the Tier 1 path only ([§9](#9-build-and-publishing-pipeline)). GPU results are
-  generated manually by a committed script and checked in as data.
+- CI executes the Tier 1 path only ([§9](#9-build-and-publishing-pipeline)); no chapter may
+  have an executable cell needing a GPU. GPU results are generated manually by a committed
+  script and checked into `bench/results/`.
 - Model weights are never committed. Chapter 1 includes a download-and-verify step, and the
   book works with any small instruct model so it survives a model being pulled from the Hub.
 
@@ -301,7 +302,7 @@ llm-serving-from-scratch/
 │   ├── traces/
 │   └── results/*.json           # committed, hardware-stamped
 ├── tests/                       # equivalence + unit tests (CPU, run in CI)
-├── chapters/                    # ch01.qmd … ch29.qmd
+├── chapters/                    # ch01.md … ch29.md
 ├── appendices/
 └── ...                          # see §8
 ```
@@ -316,9 +317,10 @@ Readers must be able to start at any chapter. Two mechanisms:
 - **A `CHECKPOINTS.md`** table mapping chapter → tag → one-line description of the engine's
   state → the scorecard row it produced.
 
-Chapter text quotes code from the working tree via Quarto's `include-code-files` extension
-(already vendored in the embeddings book's `_extensions/`) rather than duplicating it inline.
-**This is non-negotiable**: copy-pasted code in prose rots within two chapters.
+Chapter text quotes code from the working tree with MyST's `{literalinclude}` directive,
+anchored on `:start-at:` / `:end-at:` (a function signature, say) rather than line numbers,
+which rot on the first edit. Code is never duplicated inline. **This is non-negotiable**:
+copy-pasted code in prose goes stale within two chapters.
 
 ### 6.3 How numbers get into the book
 
@@ -348,40 +350,47 @@ These run on CPU in CI, so every push proves the engine is still correct.
 
 ## 7. Toolchain
 
-**Recommendation: Quarto**, matching `snowch/embeddings-at-scale-book`.
+**Decided: Jupyter Book 2 / MyST** (`mystmd`), matching `snowch.github.io` itself and
+`learn_probability`.
 
-| Criterion | Quarto | MyST |
-|---|---|---|
-| HTML + PDF + EPUB from one source | Yes, already proven in the embeddings book | HTML strong; PDF/EPUB weaker |
-| Cached execution (`freeze: auto`) | Yes — essential here, since GPU code cannot run in CI | `_build` caching, less suited to selective freeze |
-| Author's existing tooling | Established: `_quarto.yml`, `_freeze/`, `_extensions/include-code-files`, publish workflow | Used for `snowch.github.io` itself and `learn_probability` |
-| Code include from source files | `include-code-files` extension, already vendored | Possible, less ergonomic |
+This is the same toolchain the site already builds in CI, which is the deciding practical
+advantage: the GitHub Actions workflow, the `BASE_URL` handling for project sites, the execute
+cache, and the sitemap script are all already solved and proven in
+`snowch/snowch.github.io/.github/workflows/deploy.yml`. This book copies that, rather than
+introducing a second publishing stack to maintain.
 
-The deciding factor is `freeze: auto` plus `include-code-files`: this book needs cached
-outputs (GPU results can't be regenerated in CI) and needs code quoted from a live package.
+**What this changes versus the Quarto alternative** — worth naming so nothing surprises us at
+chapter 12:
 
-**Noted counter-signal:** there are recent forks of `mystmd` and `jupyter-book` under the
-account, which may indicate an intended move to MyST. If the site is consolidating on MyST,
-switch — but do it before Chapter 1, not at Chapter 12. Flagged as an open decision
-([§13](#13-decisions-to-confirm)).
+| Need | How it is met under MyST |
+|---|---|
+| Chapter source | `.md` with MyST frontmatter (`jupytext`/`kernelspec` when a chapter executes), or `.ipynb` — matching the existing site's chapter files |
+| Config / TOC | `myst.yml` with `project.toc`, exactly like the site |
+| Quoting code from `llmserve/` | `{literalinclude}` directive with `:start-at:` / `:end-at:` anchors ([§6.2](#62-per-chapter-checkpoints)) |
+| Not executing GPU code in CI | Execution is opt-in per file. GPU work is a static code block plus committed results; only cheap cells (reading result JSON, plotting) execute. See [§9](#9-build-and-publishing-pipeline) |
+| Execution caching | `_build/execute` and `_build/templates`, cached in Actions by a key hashing `requirements.txt` + `myst.yml` |
+| Cross-references | `(label)=` targets with `[](#label)`; citations via `@citekey` against `references.bib` |
+| PDF | `myst build --pdf` (LaTeX/Typst). Lower fidelity than Quarto's book PDF — acceptable; HTML is the primary format |
+| EPUB | **Not a native MyST export.** Either drop EPUB, or add a pandoc post-build step. Recommend dropping it for v1.0 and revisiting only if readers ask |
 
-**Stack:** Quarto (HTML/PDF/EPUB) · Python 3.11 · PyTorch · `transformers`/`tokenizers` ·
-FastAPI + uvicorn · `ruff` (lint/format, pinned) · `pytest` · `pre-commit` · GitHub Actions →
+The one real loss is book-quality PDF/EPUB. That is a fair trade for a single toolchain across
+the whole site, and HTML is where the readers are.
+
+**Stack:** `mystmd` (Node 20) + `jupyter-book` · Python 3.11 · PyTorch · `transformers`/
+`tokenizers` · FastAPI + uvicorn · `ruff` (pinned) · `pytest` · `pre-commit` · GitHub Actions →
 GitHub Pages.
-
----
 
 ## 8. Repository layout
 
-Following the conventions already established in `embeddings-at-scale-book`, with the
-code-package addition from [§6](#6-companion-code):
+Mirrors the MyST conventions already used by `snowch.github.io`, with the code-package addition
+from [§6](#6-companion-code):
 
 ```
 llm-serving-from-scratch/
-├── _quarto.yml               # book config: parts, chapters, formats
-├── index.qmd                 # preface: why this book, how to read it, tiers
-├── chapters/ch01..ch29.qmd
-├── appendices/appendix_a..e.qmd
+├── myst.yml                  # project config: TOC, site template, bibliography
+├── index.md                  # preface: why this book, how to read it, tiers
+├── chapters/ch01_*.md … ch29_*.md   # descriptive slugs, for URLs and search
+├── appendices/appendix_a_*.md … appendix_e_*.md
 ├── llmserve/                 # the engine (§6.1)
 ├── bench/                    # harness + committed results
 ├── tests/
@@ -389,17 +398,17 @@ llm-serving-from-scratch/
 │   ├── ci-check.sh           # the exact checks CI runs, runnable locally
 │   ├── run-benchmarks.sh     # GPU-tier regeneration (manual)
 │   ├── verify-numbers.py     # §6.3 guard
-│   ├── generate-sitemap.py
-│   └── convert-to-notebooks.sh
+│   └── generate_sitemap.py   # copy-forward from snowch.github.io
 ├── references.bib            # primary sources (appendix E)
-├── references.qmd
-├── styles.css · head.html · footer.html
-├── cover.jpg · cover-sidebar.jpg
+├── custom.css                # site.options.style
 ├── robots.txt
+├── favicon.ico
 ├── pyproject.toml            # ruff config + package metadata
-├── requirements.txt
+├── requirements.txt          # pinned engine + book deps
+├── requirements-dev.txt      # ruff/pytest/pre-commit, installed by the quality workflow
+├── package.json              # pins mystmd — the single source of truth for its version
 ├── .pre-commit-config.yaml
-├── .github/workflows/{quality.yml,publish.yml}
+├── .github/workflows/{quality.yml,deploy.yml}
 ├── .claude/SessionStart      # bootstrap deps so web sessions can run tests
 ├── AUTHORING_GUIDE.md
 ├── CHECKPOINTS.md            # §6.2
@@ -410,47 +419,62 @@ llm-serving-from-scratch/
 └── README.md
 ```
 
+Built output goes to `_build/html`, which is gitignored.
+
 **Licensing note:** the embeddings book uses CC-BY-NC-4.0 throughout. That is wrong for this
 book's code — a non-commercial licence makes `llmserve/` useless as a reference implementation
 people can borrow from. Split the licence: CC-BY-NC-4.0 for prose, Apache-2.0 for code, stated
 clearly in the README.
 
----
-
 ## 9. Build and publishing pipeline
 
-Two workflows, deliberately *not* a copy of the embeddings book's setup — see the gotchas.
+Two workflows. `deploy.yml` is adapted from `snowch.github.io/.github/workflows/deploy.yml`,
+which already solves the parts that are easy to get wrong.
 
 **`quality.yml`** — on every push and PR:
 - `ruff check` + `ruff format --check` on `llmserve/`, `bench/`, `tests/`, `scripts/`
 - `pytest tests/` — CPU tier only, including the equivalence tests from [§6.4](#64-correctness-testing)
 - `python scripts/verify-numbers.py`
-- link check on rendered HTML
+- link check on the built HTML
 
-**`publish.yml`** — on push to `main` **after** `quality.yml` succeeds, plus `workflow_dispatch`:
-- Setup Quarto + Python 3.11, `pip install -r requirements.txt`
-- `quarto render` (HTML + PDF via TinyTeX + EPUB), with `freeze: auto` so no GPU code executes
-- Generate and validate `sitemap.xml`; copy `robots.txt`; `touch .nojekyll`
-- Upload `_book/` as the Pages artifact and deploy
+**`deploy.yml`** — on push to `main` and `workflow_dispatch`:
+- `actions/configure-pages@v5`, then Node 20 + `npm install -g mystmd`, then Python 3.11 +
+  `pip install -r requirements.txt`
+- Restore the `_build/execute` + `_build/templates` cache, keyed on `requirements.txt`,
+  `myst.yml`, `package-lock.json` and `bench/results/*.json`
+- `myst build --html --execute` with
+  `BASE_URL: ${{ steps.pages.outputs.base_path }}` — **this is the critical line for a project
+  site**; without it every asset and link 404s under `/llm-serving-from-scratch/`. The site's
+  workflow already has the correct ternary that maps `/` to an empty string, so copy it verbatim
+- `python scripts/generate_sitemap.py`; copy `robots.txt`
+- `actions/upload-pages-artifact@v3` on `_build/html`, then `actions/deploy-pages@v4` with the
+  retry-and-backoff pattern the site's workflow uses
 
-Published to `https://snowch.github.io/llm-serving-from-scratch/` with GitHub Pages source set
-to **GitHub Actions**.
+Published to `https://snowch.github.io/llm-serving-from-scratch/` with Pages source set to
+**GitHub Actions**.
 
-### Gotchas observed in `embeddings-at-scale-book` — do not repeat
+### CI gotchas to avoid
 
-1. **`publish.yml` waits on a workflow that no longer exists.** Its trigger is
-   `workflow_run: workflows: ["Code Quality"]`, but `.github/workflows/` contains only
-   `publish.yml`. The effect is that the book publishes on manual dispatch only. Either commit
-   the quality workflow under exactly that name, or trigger publish directly on push to `main`.
-   *(Worth fixing in that repo too — it is almost certainly not intentional.)*
-2. **`scripts/ci-check.sh` lints `code_examples/`, which does not exist in the repo.** Keep
-   lint paths and real directories in sync, and make `ci-check.sh` the single source of truth
-   that both CI and pre-commit invoke.
-3. **A dangling `_freeze/` is a silent-staleness trap.** With `freeze: auto`, a stale freeze
-   can publish outdated results indefinitely. `verify-numbers.py` ([§6.3](#63-how-numbers-get-into-the-book))
-   is the guard; add a scheduled monthly `workflow_dispatch` reminder to regenerate GPU results.
+Three from `embeddings-at-scale-book`, two specific to MyST. All are cheap to get right at
+scaffolding time and annoying to debug later.
 
----
+1. **A `workflow_run` trigger naming a workflow that does not exist.** That repo's
+   `publish.yml` waits on `workflows: ["Code Quality"]`, but `.github/workflows/` contains only
+   `publish.yml` — so the book publishes on manual dispatch only. Here, either commit
+   `quality.yml` under exactly the name `deploy.yml` waits for, or trigger deploy directly on
+   push to `main`. *(Also worth fixing in that repo — it is almost certainly not intentional.)*
+2. **Lint paths that do not match real directories.** That repo's `scripts/ci-check.sh` lints
+   `code_examples/`, which is not in the repo. Make `ci-check.sh` the single source of truth
+   that both CI and `pre-commit` invoke, so drift is impossible.
+3. **Unpinned `mystmd`.** `npm install -g mystmd` installs whatever is latest, so a build that
+   worked yesterday can break with no commit. Pin the version.
+4. **Execute-cache staleness.** A cached `_build/execute` can keep publishing stale output
+   indefinitely. Include `bench/results/*.json` in the cache key, and let
+   `verify-numbers.py` ([§6.3](#63-how-numbers-get-into-the-book)) fail the build when a chapter
+   cites a result file older than the code it describes.
+5. **`--execute` reaching for a GPU.** No chapter may have an executable cell that needs a GPU
+   or downloads large weights — CI has neither. GPU work is a static code block plus a
+   committed result file; only cheap cells execute.
 
 ## 10. Linking from snowch.github.io
 
@@ -507,7 +531,7 @@ in-progress work `[DRAFT]`, so shipping incrementally is consistent with existin
 | **v0.4 — Cheaper Math** | ch12, ch14, ch15 · quantisation + speculation · GPU-tier results published | First release with meaningful GPU numbers; needs the Tier 2 machine. |
 | **v0.5 — API and Operations** | ch24–ch26 · OpenAI-compatible server, observability, reliability | Pulled forward ahead of Parts V–VI: a reader with the engine plus an API plus a dashboard can actually deploy something. Highest practical value per page. |
 | **v0.6 — Scale and Patterns** | ch11, ch13, ch16–ch23 · disaggregation, Triton, constrained decoding, multi-GPU, workload patterns | The advanced and specialist material, once the core arc is solid. |
-| **v1.0 — Complete** | ch27–ch29 · appendices A–E · PDF + EPUB · framework comparison · full scorecard | Costing, honest benchmarking, and the capstone retrospective land last because they summarise everything before them. |
+| **v1.0 — Complete** | ch27–ch29 · appendices A–E · framework comparison · full scorecard · PDF export if it earns its keep | Costing, honest benchmarking, and the capstone retrospective land last because they summarise everything before them. |
 
 **Rationale for the ordering:** Parts are written in dependency order except that Part VII's
 API/observability chapters are pulled ahead of Parts V–VI. That is deliberate — an engine with
@@ -551,7 +575,7 @@ Every chapter follows the same shape, so the book reads as one system:
 - [ ] Scorecard row regenerated from a committed result file (not hand-typed)
 - [ ] Checkpoint tag pushed, `CHECKPOINTS.md` updated
 - [ ] "The cost" section written — the chapter is not done while the trade-off is missing
-- [ ] Cross-references and `references.bib` entries resolve; `quarto render` clean
+- [ ] Cross-references and `references.bib` entries resolve; `myst build --html` clean
 - [ ] `[DRAFT]` removed
 
 ### 12.4 Version pinning and staleness
@@ -559,8 +583,8 @@ Every chapter follows the same shape, so the book reads as one system:
 This is the fastest-moving topic the author has written about; a book on it is stale in months
 unless designed against that.
 
-- Pin exact versions in `requirements.txt`; state them in Appendix B and in each chapter that
-  depends on library behaviour.
+- Pin exact versions in `requirements.txt` **and `package.json`** (`mystmd` included); state
+  them in Appendix B and in each chapter that depends on library behaviour.
 - Prefer mechanisms over APIs: the paged-attention *idea* will outlive any vLLM API. Where a
   library call is shown, show the mechanism first.
 - Date-stamp every benchmark and put a "last verified" line in the preface.
@@ -568,33 +592,43 @@ unless designed against that.
 
 ---
 
-## 13. Decisions to confirm
+## 13. Decisions — settled
 
-Four choices are worth settling before Chapter 1 is written, because changing them later is
-expensive. Recommendations given; all are reversible now and painful later.
+All four opening decisions are now made.
 
-| # | Decision | Recommendation |
+| # | Decision | Outcome |
 |---|---|---|
-| 1 | **Quarto or MyST?** The recent `mystmd`/`jupyter-book` forks suggest a possible move. | **Quarto** — `freeze: auto` and `include-code-files` are load-bearing here ([§7](#7-toolchain)). Revisit only if the site is consolidating on MyST. |
-| 2 | **Hardware floor.** CPU-first with GPU optional, or GPU-required? | **CPU-first** ([§5](#5-hardware-and-execution-strategy)). Costs some realism in early chapters; buys a readership that isn't gated on owning a GPU. |
-| 3 | **Fate of the L17/L20/L21 drafts.** | Finish them as short summaries that link into the book ([§2](#2-relationship-to-existing-snowchgithubio-content)). Keeps existing inbound links working; avoids maintaining two depths of the same material. |
-| 4 | **Include the Triton kernel chapter (ch13)?** | **Include, clearly optional.** It is the most "from scratch" chapter in the book and a real differentiator, but it raises the hardware bar — so nothing depends on it. |
+| 1 | Toolchain | **Jupyter Book 2 / MyST** (`mystmd`) — same stack as the rest of the site, and its Actions workflow is already proven ([§7](#7-toolchain), [§9](#9-build-and-publishing-pipeline)). The cost is book-quality PDF and native EPUB. |
+| 2 | Hardware floor | **CPU-first, GPU optional** ([§5](#5-hardware-and-execution-strategy)). Only ch13 and ch17 require a GPU, and nothing depends on them. |
+| 3 | Fate of the L17/L20/L21 drafts | **Finish them as ~200-line summaries that link into the book** ([§2](#2-relationship-to-existing-snowchgithubio-content)). Preserves inbound links and avoids maintaining the same material at two depths. |
+| 4 | Triton kernel chapter (ch13) | **Included, clearly optional.** The most genuinely *from scratch* chapter in the book; nothing later depends on it. |
 
-Two smaller ones, easily deferred: whether to publish per-part EPUBs (the embeddings book
-does, via `scripts/generate-part-epubs.sh`), and whether chapters ship as downloadable
-notebooks (`scripts/convert-to-notebooks.sh`) — both are copy-forward wins if wanted, neither
-blocks authoring.
+Two smaller ones remain, and neither blocks authoring:
 
----
+- **Downloadable notebooks per chapter.** MyST can serve `.ipynb` alongside `.md`; worth doing
+  once the chapter format has settled.
+- **PDF.** `myst build --pdf` needs a LaTeX toolchain in CI (the site's workflow already
+  installs `texlive-latex-*`). Defer until v1.0 and decide then whether the fidelity is worth it.
+- **Audio chapter intros.** Considered and **deferred**. Google's licensing very likely permits
+  publishing NotebookLM Audio Overviews, but Google itself labels them as possibly inaccurate and
+  "not a citable record" — which sits badly against a book whose whole claim is that every number
+  is measured. Revisit only with narration over reviewed prose. NotebookLM is still useful here as
+  a *drafting* tool: where its hosts garble a chapter is where readers will too.
 
 ## 14. Immediate next steps
 
-1. Settle the four decisions in [§13](#13-decisions-to-confirm).
-2. Scaffold the repo per [§8](#8-repository-layout): `_quarto.yml` with all seven parts and 29
-   chapter stubs, `pyproject.toml`, `requirements.txt`, both workflows, `.claude/SessionStart`.
-3. Enable GitHub Pages on this repo with source = GitHub Actions; confirm an empty book deploys
-   to `https://snowch.github.io/llm-serving-from-scratch/` before writing prose.
-4. Make the four `snowch.github.io` edits in [§10](#10-linking-from-snowchgithubio) so the link
+1. ~~Scaffold the repo per [§8](#8-repository-layout).~~ **Done.** All 29 chapter stubs and 5
+   appendices exist, carrying the [§12.1](#121-chapter-template) template with per-chapter
+   guidance; `myst.yml`, both workflows, pinned dependencies, `pyproject.toml`, licences,
+   `AUTHORING_GUIDE.md`, `CHECKPOINTS.md` and `.claude/SessionStart` are in place. Verified
+   locally: `ruff` clean, tests pass, `myst build --strict` builds all 35 pages with zero
+   content warnings.
+2. **Enable GitHub Pages** on this repo with source = **GitHub Actions** (a repository setting,
+   so it cannot be done from a commit), then confirm the stub book deploys correctly under
+   `/llm-serving-from-scratch/`. `BASE_URL` is the one thing that will silently break every link
+   if it is wrong, and it is far easier to verify now than after 29 chapters.
+3. Make the four `snowch.github.io` edits in [§10](#10-linking-from-snowchgithubio) so the link
    exists from day one, with the landing page marked *in progress*.
-5. Build `bench/harness.py` and ch01–ch03 as v0.1. **Do not write an optimisation chapter
+4. Build `bench/harness.py`, then ch01–ch03, as v0.1. **Do not write an optimisation chapter
    before the harness exists** — without it the book's central promise cannot be kept.
+5. Revisit the three `llmfs-scaling` lessons per decision 3 once ch12/ch14 exist to link to.

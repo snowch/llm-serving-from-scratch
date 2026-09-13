@@ -11,13 +11,29 @@ Every chapter re-runs the same benchmark, so progress is measured rather than as
 
 ## Status
 
-📋 **Planning.** No chapters written yet. See **[PLAN.md](PLAN.md)** for the full book plan:
-outline (7 parts, 29 chapters), companion-code design, toolchain, publishing pipeline, and
-delivery roadmap.
+🚧 **Scaffolded, authoring not started.** All 29 chapters and 5 appendices exist as stubs —
+each carrying its hardware tier, prerequisites, the benchmark row it is expected to move, and an
+outline of all nine template sections. No prose is written yet; every chapter is marked
+`[DRAFT]`.
 
-Once authoring begins, the book will be published to
-**https://snowch.github.io/llm-serving-from-scratch/** and linked from
-[snowch.github.io](https://snowch.github.io).
+- **[PLAN.md](PLAN.md)** — the full book plan: outline, companion-code design, hardware strategy,
+  publishing pipeline, delivery roadmap, and the decisions behind them
+- **[AUTHORING_GUIDE.md](AUTHORING_GUIDE.md)** — how to write a chapter
+- **[CHECKPOINTS.md](CHECKPOINTS.md)** — the per-chapter git tag scheme
+
+## Building it
+
+```bash
+npm install -g "mystmd@$(node -p "require('./package.json').devDependencies.mystmd")"
+pip install -r requirements.txt -r requirements-dev.txt
+
+myst start              # live preview
+./scripts/ci-check.sh   # exactly what CI runs
+```
+
+Built with **Jupyter Book 2 / MyST** (`mystmd`), matching the rest of
+[snowch.github.io](https://snowch.github.io). Once authoring begins, the book will be published
+to **https://snowch.github.io/llm-serving-from-scratch/** and linked from the site.
 
 ## Relationship to the LLM From Scratch series
 

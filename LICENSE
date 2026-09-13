@@ -1,0 +1,15 @@
+Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)
+
+Copyright 2026 Chris Snow
+
+The book text in this repository — index.md, chapters/, appendices/, and the project
+documentation — is licensed under the Creative Commons Attribution-NonCommercial 4.0
+International License.
+
+You are free to share and adapt this material for non-commercial purposes, provided you give
+appropriate credit and indicate if changes were made.
+
+Full licence text: https://creativecommons.org/licenses/by-nc/4.0/legalcode
+
+The CODE in this repository is licensed separately and more permissively, under Apache-2.0, so
+that the reference engine can actually be reused. See LICENSE-CODE.

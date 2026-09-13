@@ -1,0 +1,12 @@
+{
+  "name": "llm-serving-from-scratch",
+  "private": true,
+  "description": "Build tooling for the LLM Serving from Scratch book (Jupyter Book 2 / MyST).",
+  "devDependencies": {
+    "mystmd": "1.10.1"
+  },
+  "scripts": {
+    "start": "myst start",
+    "build": "myst build --html"
+  }
+}
