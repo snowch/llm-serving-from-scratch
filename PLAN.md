@@ -156,7 +156,7 @@ into prose. See [§6.3](#63-how-numbers-get-into-the-book).
 
 ## 4. Outline
 
-Seven parts, 29 chapters, 5 appendices. Chapter lengths target 2,500–5,000 words plus code;
+Seven parts, 32 chapters, 5 appendices. Chapter lengths target 2,500–5,000 words plus code;
 the optional/advanced chapters may run longer.
 
 ### Part I — The Serving Problem (ch01–ch03)
@@ -541,7 +541,7 @@ books each get their own landing page and TOC entry.
 The book should be *linkable and useful* long before it is finished — the site already marks
 in-progress work `[DRAFT]`, so shipping incrementally is consistent with existing practice.
 
-**Status: all 29 chapters and all 5 appendices are written**, so the releases below are now a record
+**Status: all 32 chapters and all 5 appendices are written**, so the releases below are now a record
 of the order things were built in rather than a plan. Two things promised here were not delivered as
 promised, and both are stated in the chapters themselves rather than quietly dropped:
 
@@ -667,7 +667,7 @@ Two smaller ones remain, and neither blocks authoring:
 3. Make the four `snowch.github.io` edits in [§10](#10-linking-from-snowchgithubio) so the link
    exists from day one, with the landing page marked *in progress*.
 4. ~~Build `bench/harness.py`, then ch01–ch03, as v0.1.~~ **Done**, and then everything after it.
-   All 29 chapters and 5 appendices are written; `./scripts/ci-check.sh` is clean, 229 tests pass,
+   All 32 chapters and 5 appendices are written; `./scripts/ci-check.sh` is clean, 273 tests pass,
    and every figure traces to a stamped result in `bench/results/`.
 5. Revisit the three `llmfs-scaling` lessons per decision 3 now that ch13/ch15 exist to link to.
 6. **On Tier 2/3 hardware**, in priority order: write ch14's Triton kernel against the reference and
