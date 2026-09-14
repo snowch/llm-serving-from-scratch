@@ -22,7 +22,7 @@ is. It comes from npm and is pinned in `package.json`; there is no second copy i
 
 Every chapter follows the same nine-part shape (PLAN.md §12.1). The stubs are already generated
 with these headings and per-chapter guidance in `[To write: …]` brackets. Do not reorder them —
-the repetition is what makes 29 chapters read as one book.
+the repetition is what makes 32 chapters read as one book.
 
 1. **Header block** — tier, prerequisites, the scorecard row this chapter moves
 2. **The problem** — a measurement from the previous chapter that is unacceptable

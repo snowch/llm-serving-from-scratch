@@ -88,6 +88,36 @@ jobs:
         # page, and publishing it would put a second unstyled copy of the whole book on the site.
         run: rm -f _build/html/llm-serving-from-scratch.html
 
+      - name: Check the homepage's PDF link resolves
+        # `myst build --strict` cannot check this one: the target is not a source document, so the
+        # build has no opinion about it. It shipped broken exactly once — the link was written
+        # relative, and the theme joins BASE_URL to a relative target with no separator, giving
+        # /llm-serving-from-scratchllm-serving-from-scratch.pdf. The only symptom was a 404 on the
+        # book's one download button, found by a reader rather than by CI.
+        env:
+          BASE_URL: ${{ steps.pages.outputs.base_path == '/' && '' || steps.pages.outputs.base_path }}
+        run: |
+          href=$(grep -o 'href="[^"]*llm-serving-from-scratch\.pdf"' _build/html/index.html \
+                 | head -1 | sed 's/^href="//; s/"$//')
+          if [ -z "$href" ]; then
+            echo "::error::the homepage does not link to the PDF at all" >&2
+            exit 1
+          fi
+          # Matched against "$BASE_URL/" rather than stripped as a prefix. Stripping is what lets
+          # the bug through: /llm-serving-from-scratchllm-serving-from-scratch.pdf minus the base
+          # path leaves a filename that does exist, so a prefix-strip check passes on exactly the
+          # href it was written to catch. The separator is the thing being tested.
+          case "$href" in
+            "$BASE_URL"/*) rest="${href#$BASE_URL}" ;;
+            *) echo "::error::$href does not begin with $BASE_URL/" >&2; exit 1 ;;
+          esac
+          target="_build/html$rest"
+          echo "homepage links to $href, which is $target"
+          if [ ! -f "$target" ]; then
+            echo "::error::$href does not resolve to a published file" >&2
+            exit 1
+          fi
+
       - name: Copy robots.txt
         run: cp robots.txt _build/html/robots.txt
 
